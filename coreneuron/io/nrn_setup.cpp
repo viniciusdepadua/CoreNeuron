@@ -51,6 +51,8 @@ THE POSSIBILITY OF SUCH DAMAGE.
 #include "coreneuron/utils/nrnoc_aux.hpp"
 #include "coreneuron/io/phase1.hpp"
 #include "coreneuron/io/phase2.hpp"
+#include "coreneuron/io/mech_report.h"
+#include "coreneuron/apps/corenrn_parameters.hpp"
 
 // callbacks into nrn/src/nrniv/nrnbbcore_write.cpp
 #include "coreneuron/sim/fast_imem.hpp"
@@ -542,11 +544,12 @@ void nrn_setup(const char* filesdat,
     nrn_mk_table_check();  // was done in nrn_thread_memblist_setup in multicore.c
 
     model_size();
-    delete[] userParams.gidgroups;
 
     if (nrnmpi_myid == 0 && !corenrn_param.is_quiet()) {
         printf(" Setup Done   : %.2lf seconds \n", nrn_wtime() - time);
     }
+    write_mech_report(corenrn_param.outpath, ngroup, userParams.gidgroups);
+    delete[] userParams.gidgroups;
 }
 
 void setup_ThreadData(NrnThread& nt) {
