@@ -183,6 +183,7 @@ void update(NrnThread* _nt) {
     /* do not need to worry about linmod or extracellular*/
     if (secondorder) {
         // clang-format off
+
         #pragma acc parallel loop present(          \
             vec_v[0:i2], vec_rhs[0:i2])             \
             if (_nt->compute_gpu) async(stream_id)
@@ -192,6 +193,7 @@ void update(NrnThread* _nt) {
         }
     } else {
         // clang-format off
+
         #pragma acc parallel loop present(              \
                 vec_v[0:i2], vec_rhs[0:i2])             \
                 if (_nt->compute_gpu) async(stream_id)
@@ -311,6 +313,7 @@ static void* nrn_fixed_step_thread(NrnThread* nth) {
         int stream_id = nth->stream_id;
         /*@todo: do we need to update nth->_t on GPU: Yes (Michael, but can launch kernel) */
         // clang-format off
+
         #pragma acc update device(nth->_t) if (nth->compute_gpu) async(stream_id)
         #pragma acc wait(stream_id)
 // clang-format on
@@ -352,6 +355,7 @@ void* nrn_fixed_step_lastpart(NrnThread* nth) {
         int stream_id = nth->stream_id;
         /*@todo: do we need to update nth->_t on GPU */
         // clang-format off
+
         #pragma acc update device(nth->_t) if (nth->compute_gpu) async(stream_id)
         #pragma acc wait(stream_id)
 // clang-format on

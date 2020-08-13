@@ -42,6 +42,7 @@ static void triang(NrnThread* _nt) {
 #endif
     /** @todo: just for benchmarking, otherwise produces wrong results */
     // clang-format off
+
     #pragma acc parallel loop seq present(      \
         vec_a[0:i3], vec_b[0:i3], vec_d[0:i3],  \
         vec_rhs[0:i3], parent_index[0:i3])      \
@@ -70,6 +71,7 @@ static void bksub(NrnThread* _nt) {
 #endif
     /** @todo: just for benchmarking, otherwise produces wrong results */
     // clang-format off
+
     #pragma acc parallel loop seq present(      \
         vec_d[0:i2], vec_rhs[0:i2])             \
         async(stream_id) if (_nt->compute_gpu)
@@ -80,6 +82,7 @@ static void bksub(NrnThread* _nt) {
 
     /** @todo: just for benchmarking, otherwise produces wrong results */
     // clang-format off
+
     #pragma acc parallel loop seq present(          \
         vec_b[0:i3], vec_d[0:i3], vec_rhs[0:i3],    \
         parent_index[0:i3]) async(stream_id)        \

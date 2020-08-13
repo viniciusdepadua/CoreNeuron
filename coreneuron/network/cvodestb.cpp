@@ -62,7 +62,8 @@ void init_net_events() {
         double* weights = nt->weights;
         int n_weight = nt->n_weight;
         if (n_weight) {
-// clang-format off
+            // clang-format off
+
             #pragma acc update device(weights[0 : n_weight]) if (nt->compute_gpu)
             // clang-format on
         }

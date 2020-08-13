@@ -33,6 +33,7 @@ static void nrn_rhs(NrnThread* _nt) {
     int* parent_index = _nt->_v_parent_index;
 
     // clang-format off
+
     #pragma acc parallel loop present(          \
         vec_rhs[0:i3], vec_d[0:i3])             \
         if (_nt->compute_gpu) async(_nt->stream_id)
@@ -80,6 +81,7 @@ static void nrn_rhs(NrnThread* _nt) {
             rhs += ai_j*(vi_j - vi)
     */
     // clang-format off
+
     #pragma acc parallel loop present(          \
         vec_rhs[0:i3], vec_d[0:i3],             \
         vec_a[0:i3], vec_b[0:i3],               \
@@ -149,6 +151,7 @@ static void nrn_lhs(NrnThread* _nt) {
 
     /* now add the axial currents */
     // clang-format off
+
     #pragma acc parallel loop present(          \
         vec_d[0:i3], vec_a[0:i3],               \
         vec_b[0:i3], parent_index[0:i3])        \

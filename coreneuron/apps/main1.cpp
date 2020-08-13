@@ -489,6 +489,7 @@ extern "C" int run_solve_core(int argc, char** argv) {
     bool skip_mpi_finalize = corenrn_param.skip_mpi_finalize;
 
     // clang-format off
+
     #pragma acc data copyin(celsius, secondorder) if (compute_gpu)
     // clang-format on
     {

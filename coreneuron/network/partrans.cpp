@@ -51,6 +51,7 @@ void nrnmpi_v_transfer() {
         double* src_gather = ttd.src_gather.data();
         size_t n_src_gather = ttd.src_gather.size();
         // clang-format off
+
         #pragma acc parallel loop present(                                          \
             src_indices[0:n_src_gather], src_data[0:nt._ndata],                     \
             src_gather[0 : n_src_gather]) /*copyout(src_gather[0:n_src_gather])*/   \
@@ -69,6 +70,7 @@ void nrnmpi_v_transfer() {
     // copy gathered source values to outsrc_buf_
     for (int tid = 0; tid < nrn_nthread; ++tid) {
         // clang-format off
+
         #pragma acc wait(nrn_threads[tid].stream_id)
         // clang-format on
         TransferThreadData& ttd = transfer_thread_data_[tid];
@@ -99,6 +101,7 @@ void nrnmpi_v_transfer() {
 
     // insrc_buf_ will get copied to targets via nrnthread_v_transfer
     // clang-format off
+
     #pragma acc update device(          \
         insrc_buf_[0:n_insrc_buf])      \
         if (nrn_threads[0].compute_gpu)
@@ -118,6 +121,7 @@ void nrnthread_v_transfer(NrnThread* _nt) {
     int ndata = _nt->_ndata;
 
     // clang-format off
+
     #pragma acc parallel loop present(  \
         insrc_indices[0:ntar],          \
         tar_data[0:ndata],              \
@@ -135,6 +139,7 @@ void nrn_partrans::gap_update_indices() {
     if (insrcdspl_) {
         int n_insrc_buf = insrcdspl_[nrnmpi_numprocs];
         // clang-format off
+
         #pragma acc enter data create(      \
             insrc_buf_[0:n_insrc_buf])      \
             if (nrn_threads[0].compute_gpu)
@@ -148,6 +153,7 @@ void nrn_partrans::gap_update_indices() {
         NrnThread* nt = nrn_threads + tid;
         if (n_src_indices) {
             // clang-format off
+
             int *src_indices = ttd.src_indices.data();
             double *src_gather = ttd.src_gather.data();
             #pragma acc enter data copyin(src_indices[0 : n_src_indices]) if (nt->compute_gpu)
@@ -157,6 +163,7 @@ void nrn_partrans::gap_update_indices() {
 
         if (ttd.insrc_indices.size()) {
             // clang-format off
+
             int *insrc_indices = ttd.insrc_indices.data();
             size_t n_insrc_indices = ttd.insrc_indices.size();
             #pragma acc enter data copyin(insrc_indices[0 : n_insrc_indices]) if (nt->compute_gpu)
