@@ -32,6 +32,7 @@ THE POSSIBILITY OF SUCH DAMAGE.
 #include <iostream>
 #include <fstream>
 #include <vector>
+#include <array>
 #include <sys/stat.h>
 
 #include "coreneuron/utils/nrn_assert.h"
@@ -131,26 +132,40 @@ class FileHandler {
      */
     template <typename T>
     int read_mapping_info(T* mapinfo) {
-        int nsec, nseg, n_scan;
+        int nsec, nseg, npos, n_scan;
         char line_buf[max_line_length], name[max_line_length];
 
         F.getline(line_buf, sizeof(line_buf));
-        n_scan = sscanf(line_buf, "%s %d %d", name, &nsec, &nseg);
+        n_scan = sscanf(line_buf, "%s %d %d %d", name, &nsec, &nseg, &npos);
 
-        nrn_assert(n_scan == 3);
+        nrn_assert(n_scan == 4);
 
         mapinfo->name = std::string(name);
 
         if (nseg) {
             std::vector<int> sec, seg;
+            std::vector<double> pos_start;
+            std::vector<double> pos_end;
             sec.reserve(nseg);
             seg.reserve(nseg);
+            pos_start.reserve(npos);
+            pos_end.reserve(npos);
 
             read_array<int>(&sec[0], nseg);
             read_array<int>(&seg[0], nseg);
+            read_array<double>(&pos_start[0], npos);
+            read_array<double>(&pos_end[0], npos);
+            std::cout << "read_mapping_info() " << name << " - " << nsec << " - " << nseg << " - " << npos << std::endl;
+            std::cout << "pos_start[0] = " << pos_start[0] << std::endl;
+            std::cout << "pos_end[0] = " << pos_end[0] << std::endl;
 
+            std::array<double, 3> seg_pos_start;
+            std::array<double, 3> seg_pos_end;
             for (int i = 0; i < nseg; i++) {
                 mapinfo->add_segment(sec[i], seg[i]);
+                std::copy(&pos_end[3*i], &pos_start[3*i] + 3, seg_pos_start.begin());
+                std::copy(&pos_end[3*i], &pos_end[3*i] + 3, seg_pos_end.begin());
+                mapinfo->add_positions(seg[i], seg_pos_start, seg_pos_end);
             }
         }
         return nseg;

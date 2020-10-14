@@ -5,6 +5,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <array>
 #include <map>
 #include <iostream>
 
@@ -12,7 +13,10 @@ namespace coreneuron {
 
 /** type to store every section and associated segments */
 typedef std::vector<int> segvec_type;
+typedef std::array<double, 3> posarr_type;
+typedef std::pair<posarr_type, posarr_type> pos_type;
 typedef std::map<int, segvec_type> secseg_map_type;
+typedef std::map<int, pos_type> segpos_map_type;
 typedef secseg_map_type::iterator secseg_it_type;
 
 /** @brief Section to segment mapping
@@ -29,6 +33,7 @@ struct SecMapping {
 
     /** map of section and associated segments */
     secseg_map_type secmap;
+    segpos_map_type segmap;
 
     SecMapping() = default;
 
@@ -49,6 +54,10 @@ struct SecMapping {
     /** @brief add section to associated segment */
     void add_segment(int sec, int seg) {
         secmap[sec].push_back(seg);
+    }
+
+    void add_positions(int seg, posarr_type pos_start, posarr_type pos_end) {
+        segmap[seg] = std::make_pair(pos_start, pos_end);
     }
 };
 
