@@ -163,7 +163,7 @@ class FileHandler {
             std::array<double, 3> seg_pos_end;
             for (int i = 0; i < nseg; i++) {
                 mapinfo->add_segment(sec[i], seg[i]);
-                std::copy(&pos_end[3*i], &pos_start[3*i] + 3, seg_pos_start.begin());
+                std::copy(&pos_start[3*i], &pos_start[3*i] + 3, seg_pos_start.begin());
                 std::copy(&pos_end[3*i], &pos_end[3*i] + 3, seg_pos_end.begin());
                 mapinfo->add_positions(seg[i], seg_pos_start, seg_pos_end);
             }
