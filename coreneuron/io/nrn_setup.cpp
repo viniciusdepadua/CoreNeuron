@@ -908,13 +908,29 @@ void read_phase3(NrnThread& nt, UserParams& userParams) {
 
         CellMapping* cmap = new CellMapping(gid);
 
+        #ifdef DEBUG_MAPPING
+        // gid of cell
+        std::cout << "gid " << gid << "\n";
+        #endif
+
         // read section-segment mapping for every section list
         for (int j = 0; j < nseclist; j++) {
             SecMapping* smap = new SecMapping();
             F.read_mapping_info(smap);
             cmap->add_sec_map(smap);
-        }
 
+            #ifdef DEBUG_MAPPING
+            if (strcmp(smap->name.c_str(), "axon") == 0) {
+                std::cout << "\t " << smap->name << "\n";
+                for(auto section: smap->secmap) {
+                    std::cout << "\t\t sec ID key : " << section.first << "\n";
+                    std::cout << "\t\t\t seg ids: ";
+                    std::copy(section.second.begin(), section.second.end(), std::ostream_iterator<int>(std::cout, " "));
+                    std::cout << "\n";
+                }
+            }
+            #endif
+        }
         ntmapping->add_cell_mapping(cmap);
     }
 

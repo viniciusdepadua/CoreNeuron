@@ -1,6 +1,7 @@
 #include "report_handler.hpp"
 #include "coreneuron/io/nrnsection_mapping.hpp"
 #include "coreneuron/mechanism/mech_mapping.hpp"
+#include "coreneuron/utils/nrn_assert.h"
 
 namespace coreneuron {
 
@@ -101,11 +102,41 @@ VarsToReport ReportHandler::get_soma_vars_to_report(const NrnThread& nt,
                           << '\n';
                 nrn_abort(1);
             }
+
+            //#define SOMA_SECTION_VOLTAGE 1
+
+            #ifdef SOMA_SECTION_VOLTAGE
+
             /** get  section list mapping for soma */
             SecMapping* s = m->get_seclist_mapping("soma");
             /** 1st key is section-id and 1st value is segment of soma */
             int section_id = s->secmap.begin()->first;
             int idx = s->secmap.begin()->second.front();
+
+            #else
+
+            // get sections of type axon and make sure we have at least 2 sections
+            const auto& axon_section_list = m->get_seclist_mapping("axon");
+            nrn_assert((axon_section_list->num_sections() >= 2));
+
+            // get 2nd section from section list and it's segements
+            const auto& second_section = std::next(axon_section_list->secmap.begin());
+            const auto& segement_ids = second_section->second;
+
+            // calculate middle segement, make sure #segements are odd
+            auto num_segments = segement_ids.size();
+            nrn_assert(num_segments%1 == 0);
+
+            // get id of middle segment
+            int section_id = second_section->first;
+            int idx = segement_ids[num_segments/2];
+
+            #ifdef DEBUG_MAPPING
+            std::cout << "section id and middle segement " << section_id << " " << idx << std::endl;
+            #endif
+
+            #endif
+
             double* variable = report_variable + idx;
             to_report.push_back(VarWithMapping(section_id, variable));
             vars_to_report[gid] = to_report;
