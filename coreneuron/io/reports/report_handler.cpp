@@ -117,7 +117,6 @@ VarsToReport ReportHandler::get_soma_vars_to_report(const NrnThread& nt,
 VarsToReport ReportHandler::get_compartment_vars_to_report(const NrnThread& nt,
                                                            const std::set<int>& target,
                                                            double* report_variable) const {
-    std::cout << "get_compartment_vars_to_report()" << std::endl; 
     VarsToReport vars_to_report;
     const auto* mapinfo = static_cast<NrnThreadMappingInfo*>(nt.mapping);
     if (!mapinfo) {

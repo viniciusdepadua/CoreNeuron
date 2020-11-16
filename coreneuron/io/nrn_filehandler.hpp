@@ -155,9 +155,6 @@ class FileHandler {
             read_array<int>(&seg[0], nseg);
             read_array<double>(&pos_start[0], npos);
             read_array<double>(&pos_end[0], npos);
-            std::cout << "read_mapping_info() " << name << " - " << nsec << " - " << nseg << " - " << npos << std::endl;
-            std::cout << "pos_start[0] = " << pos_start[0] << std::endl;
-            std::cout << "pos_end[0] = " << pos_end[0] << std::endl;
 
             std::array<double, 3> seg_pos_start;
             std::array<double, 3> seg_pos_end;
