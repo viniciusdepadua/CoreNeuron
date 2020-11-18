@@ -36,6 +36,7 @@ THE POSSIBILITY OF SUCH DAMAGE.
 #include <sys/stat.h>
 
 #include "coreneuron/utils/nrn_assert.h"
+#include "coreneuron/io/nrnsection_mapping.hpp"
 
 namespace coreneuron {
 /** Encapsulate low-level reading of coreneuron input data files.
@@ -131,7 +132,7 @@ class FileHandler {
      * Read count no of mappings for section to segment
      */
     template <typename T>
-    int read_mapping_info(T* mapinfo) {
+    int read_mapping_info(T* mapinfo, NrnThreadMappingInfo* ntmapping) {
         int nsec, nseg, npos, n_scan;
         char line_buf[max_line_length], name[max_line_length];
 
@@ -162,7 +163,9 @@ class FileHandler {
                 mapinfo->add_segment(sec[i], seg[i]);
                 std::copy(&pos_start[3*i], &pos_start[3*i] + 3, seg_pos_start.begin());
                 std::copy(&pos_end[3*i], &pos_end[3*i] + 3, seg_pos_end.begin());
-                mapinfo->add_positions(seg[i], seg_pos_start, seg_pos_end);
+                // mapinfo->add_positions(seg[i], seg_pos_start, seg_pos_end);
+                ntmapping->add_segment_id(seg[i]);
+                ntmapping->add_positions(seg[i], seg_pos_start, seg_pos_end);
             }
         }
         return nseg;

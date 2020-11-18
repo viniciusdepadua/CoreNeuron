@@ -7,16 +7,17 @@
 #include <vector>
 #include <array>
 #include <map>
+#include <unordered_map>
 #include <iostream>
 
 namespace coreneuron {
 
 /** type to store every section and associated segments */
 typedef std::vector<int> segvec_type;
-typedef std::array<double, 3> posarr_type;
-typedef std::pair<posarr_type, posarr_type> pos_type;
+typedef std::array<double, 3> Point3D;
+typedef std::pair<Point3D, Point3D> pos_type;
 typedef std::map<int, segvec_type> secseg_map_type;
-typedef std::map<int, pos_type> segpos_map_type;
+typedef std::unordered_map<int, pos_type> segpos_map_type;
 typedef secseg_map_type::iterator secseg_it_type;
 
 /** @brief Section to segment mapping
@@ -56,7 +57,7 @@ struct SecMapping {
         secmap[sec].push_back(seg);
     }
 
-    void add_positions(int seg, posarr_type pos_start, posarr_type pos_end) {
+    void add_positions(int seg, Point3D pos_start, Point3D pos_end) {
         segmap[seg] = std::make_pair(pos_start, pos_end);
     }
 };
@@ -146,6 +147,12 @@ struct NrnThreadMappingInfo {
     /** list of cells mapping */
     std::vector<CellMapping*> mappingvec;
 
+    /** list of segment ids */
+    std::vector<int> segment_ids;
+
+    /** map containing segment ids an its respective start and end positions */
+    segpos_map_type segment_positions;
+
     /** @brief number of cells */
     size_t size() const {
         return mappingvec.size();
@@ -173,6 +180,16 @@ struct NrnThreadMappingInfo {
     /** @brief add mapping information of new cell */
     void add_cell_mapping(CellMapping* c) {
         mappingvec.push_back(c);
+    }
+
+    /** @brief add a new segment */
+    void add_segment_id(const int segment_id) {
+        segment_ids.push_back(segment_id);
+    }
+
+    /** @brief add start and end position information of new segment */
+    void add_positions(int segment_id, const Point3D& pos_start, const Point3D& pos_end) {
+        segment_positions.insert({segment_id, std::make_pair(pos_start, pos_end)});
     }
 };
 }

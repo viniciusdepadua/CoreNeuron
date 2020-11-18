@@ -1,6 +1,7 @@
 #include "report_handler.hpp"
 #include "coreneuron/io/nrnsection_mapping.hpp"
 #include "coreneuron/mechanism/mech_mapping.hpp"
+#include <algorithm>
 
 namespace coreneuron {
 
@@ -135,25 +136,25 @@ VarsToReport ReportHandler::get_compartment_vars_to_report(const NrnThread& nt,
                     << gid << '\n';
                 nrn_abort(1);
             }
-            std::cout << "GID: " << gid << std::endl;
+            //std::cout << "GID: " << gid << std::endl;
             std::vector<VarWithMapping> to_report;
             to_report.reserve(cell_mapping->size());
             const auto& secmapvec = cell_mapping->secmapvec;
             for (const auto& s : secmapvec) {
                 for (auto& sm : s->secmap) {
                     int compartment_id = sm.first;
-                    std::cout << "  +++compartment: " << compartment_id << std::endl;
+                    //std::cout << "  +++compartment: " << compartment_id << std::endl;
                     auto& vec = sm.second;
                     for (const auto& idx : vec) {
                         auto& positions = s->segmap[idx];
-                        std::cout << "    --"<<idx << ": ";
+                        /*std::cout << "    --"<<idx << ": ";
                         for( auto const& pos : positions.first ) {
                             std::cout << "start: " << pos << ",";
                         }
                         for( auto const& pos : positions.second ) {
                             std::cout << "    end: " << pos << ",";
                         }
-                        std::cout << std::endl;
+                        std::cout << std::endl;*/
                         /** corresponding voltage in coreneuron voltage array */
                         double* variable = report_variable + idx;
                         to_report.push_back(VarWithMapping(compartment_id, variable));
@@ -163,6 +164,25 @@ VarsToReport ReportHandler::get_compartment_vars_to_report(const NrnThread& nt,
             vars_to_report[gid] = to_report;
         }
     }
+    /*std::cout << std::endl << std::endl << "  ============ NEW SEGMENT POSITIONS ===========" << std::endl;
+    std::cout << "Total segments in nt: " << nt.end << std::endl;
+    std::cout << "Total segments ids: " << mapinfo->segment_ids.size() << std::endl;
+    std::vector<int> segment_ids (mapinfo->segment_ids);
+    std::sort(segment_ids.begin(), segment_ids.end());
+    for( int segment_id : segment_ids ) {
+        std::cout << " ============= Segment ID: " << segment_id << std::endl;
+        for( int i=0; i<3; i++) {
+            std::cout << " +++++ start: ";
+            std::cout << i << ": " << mapinfo->segment_positions.at(segment_id).first[i] << ", ";
+        }
+        std::cout << std::endl;
+        for( int i=0; i<3; i++) {
+            std::cout << " ----- end: ";
+            std::cout << i << ": " << mapinfo->segment_positions.at(segment_id).second[i] << ", ";
+        }
+        std::cout << std::endl;
+    }
+    std::cout << std::endl;*/
     return vars_to_report;
 }
 
