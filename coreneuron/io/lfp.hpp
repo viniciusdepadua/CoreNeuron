@@ -97,7 +97,7 @@ namespace coreneuron {
 
         F delta(mu * mu - (de2 - radius * radius) / dx2);
         F one_m_mu(1.0 - mu);
-        auto log_integral = [&q2](F a, F b) {
+        auto log_integral = [&q2, &dxn](F a, F b) {
 		if (std::abs(q2) < 1.0e-20) {
 		    if (a * b < 0) {
 		       throw std::invalid_argument("Log integral: invalid arguments " + std::to_string(b) + " " + std::to_string(a));
@@ -157,14 +157,16 @@ namespace coreneuron {
          * \param electrodes positions of the electrodes
          * \param extra_cellular_conductivity conductivity of the extra-cellular medium
          */
-        template <typename Point3Ds, typename Vector>
+        template <typename Point3Ds, typename Vector, typename SegmentIdTy>
         LFPCalculator(MPI_Comm comm,
                       const Point3Ds& seg_start,
                       const Point3Ds& seg_end,
                       const Vector& radius,
+                      const std::vector<SegmentIdTy>& segment_ids,
                       const Point3Ds& electrodes,
                       double extra_cellular_conductivity)
 			: comm_(comm)
+			, segment_ids_(segment_ids)
         {
             if (seg_start.size() != seg_end.size()) {
                 throw std::logic_error("Wrong number of segment starts or ends.");
@@ -192,7 +194,7 @@ namespace coreneuron {
                 res[k] = 0.0;
                 auto& ms = m[k];
                 for (size_t l = 0; l < ms.size(); l++) {
-                    res[k] += ms[l] * membrane_current[l];
+                    res[k] += ms[l] * membrane_current[segment_ids_[l]];
                 }
             }
             std::vector<double> res_reduced(res.size());
@@ -218,6 +220,7 @@ namespace coreneuron {
 
         std::vector<std::vector<double> > m;
         MPI_Comm comm_;
+        std::vector<SegmentIdTy> segment_ids_;
     };
 
     template <>
@@ -253,8 +256,28 @@ namespace coreneuron {
                 f
         );
     }
-
-
+    
+    template <LFPCalculatorType Ty, typename Point3Ds>
+        LFPCalculator<Ty> mkLFPCalculator(NrnThread* nt, const Point3Ds& electrodes,
+                      double extra_cellular_conductivity, double radius_factor = 1.0) {
+	const auto* mapinfo = static_cast<NrnThreadMappingInfo*>(nt->mapping);
+	std::vector<std::array<double, 3>> seg_pos_starts(mapinfo->segment_ids.size());
+	std::vector<std::array<double, 3>> seg_pos_ends(mapinfo->segment_ids.size());
+        std::vector<double> radius(mapinfo->segment_ids.size());
+	for (size_t k = 0; k < mapinfo->segment_ids.size(); ++k)  {
+            std::tie(seg_pos_starts[k], seg_pos_ends[k]) = mapinfo->segment_positions.at(mapinfo->segment_ids[k]);
+	    radius[k] = mapinfo->radius.at(mapinfo->segment_ids[k]) * radius_factor;
+        }
+        return LFPCalculator<Ty>(
+			seg_pos_starts,
+			seg_pos_ends,
+			radius,
+                        segment_ids,                       
+			electrodes,
+                        extra_cellular_conductivity
+			);
+    }
+			
 };
 
 #endif //AREA_LFP_H
