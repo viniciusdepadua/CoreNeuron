@@ -100,9 +100,9 @@ namespace coreneuron {
         auto log_integral = [&q2, &dxn](F a, F b) {
 		if (std::abs(q2) < 1.0e-20) {
 		    if (a * b < 0) {
-		       throw std::invalid_argument("Log integral: invalid arguments " + std::to_string(b) + " " + std::to_string(a) +".Likely electrode exactly on the segment and no flooring is present.");
+		       throw std::invalid_argument("Log integral: invalid arguments " + std::to_string(b) + " " + std::to_string(a) +". Likely the electrode is exactly on the segment and no flooring is present.");
                     }
-		    return std::abs(std::log(b / a)) / dxn;
+		    return std::log(b / a) / dxn;
 		}
                 else {
 		    return std::log((b + std::sqrt(b * b + q2))
