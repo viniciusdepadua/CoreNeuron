@@ -102,6 +102,8 @@ std::vector<ReportConfiguration> create_report_configurations(const char* conf_f
                 report.type = CompartmentReport;
         } else if (strcmp(report.type_str, "synapse") == 0) {
             report.type = SynapseReport;
+        } else if (strcmp(report.type_str, "lfp") == 0) {
+            report.type = LFPReport;
         } else {
             std::cerr << "Report error: unsupported type " << report.type_str << "\n";
             abort();

@@ -32,6 +32,9 @@ class ReportHandler {
     VarsToReport get_compartment_vars_to_report(const NrnThread& nt,
                                                 const std::set<int>& target,
                                                 double* report_variable) const;
+    VarsToReport get_lfp_vars_to_report(const NrnThread& nt,
+                                        const std::set<int>& target,
+                                        double* report_variable) const;
     VarsToReport get_custom_vars_to_report(const NrnThread& nt,
                                            ReportConfiguration& report,
                                            const std::vector<int>& nodes_to_gids) const;

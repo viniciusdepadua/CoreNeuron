@@ -40,6 +40,11 @@ void ReportHandler::create_report(double dt, double tstop, double delay) {
                                                                 nt.nrn_fast_imem->nrn_sav_rhs);
                 register_compartment_report(nt, m_report_config, vars_to_report);
                 break;
+            case LFPReport:
+                vars_to_report =
+                    get_lfp_vars_to_report(nt, m_report_config.target, nt._actual_lfp);
+                register_compartment_report(nt, m_report_config, vars_to_report);
+                break;
             default:
                 vars_to_report = get_custom_vars_to_report(nt, m_report_config, nodes_to_gid);
                 register_custom_report(nt, m_report_config, vars_to_report);
@@ -183,6 +188,29 @@ VarsToReport ReportHandler::get_compartment_vars_to_report(const NrnThread& nt,
         std::cout << std::endl;
     }
     std::cout << std::endl;*/
+    return vars_to_report;
+}
+
+VarsToReport ReportHandler::get_lfp_vars_to_report(const NrnThread& nt,
+                                                           const std::set<int>& target,
+                                                           double* report_variable) const {
+    VarsToReport vars_to_report;
+    /*const auto* mapinfo = static_cast<NrnThreadMappingInfo*>(nt.mapping);
+    if (!mapinfo) {
+        std::cerr << "[LFP] Error : mapping information is missing for a Cell group "
+                  << nt.ncell << '\n';
+        nrn_abort(1);
+    }*/
+
+    std::vector<VarWithMapping> to_report;
+    // Add all electrodes to the first gid for now
+    int gid = nt.presyns[0].gid_;
+    std::vector<int> electrode_ids = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+    for (const auto& electrode_id : electrode_ids) {
+        double* variable = report_variable + electrode_id;
+        to_report.push_back(VarWithMapping(electrode_id, variable));
+    }
+    vars_to_report[gid] = to_report;
     return vars_to_report;
 }
 

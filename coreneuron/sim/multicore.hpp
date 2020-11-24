@@ -122,6 +122,8 @@ struct NrnThread : public MemoryManaged {
     double* _actual_a = nullptr;
     double* _actual_b = nullptr;
     double* _actual_v = nullptr;
+    std::vector<double> _lfp = {0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9};
+    double* _actual_lfp = _lfp.data();
     double* _actual_area = nullptr;
     double* _actual_diam = nullptr; /* nullptr if no mechanism has dparam with diam semantics */
     double* _shadow_rhs = nullptr;  /* Not pointer into _data. Avoid race for multiple POINT_PROCESS in same
