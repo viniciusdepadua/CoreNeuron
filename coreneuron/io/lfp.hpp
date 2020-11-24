@@ -143,7 +143,7 @@ namespace coreneuron {
     /**
      * \brief LFPCalculator allows calculation of LFP given membrane currents.
      */
-    template <LFPCalculatorType Ty>
+    template <LFPCalculatorType Ty, typename SegmentIdTy = int>
     struct LFPCalculator {
 
         /**
@@ -157,7 +157,7 @@ namespace coreneuron {
          * \param electrodes positions of the electrodes
          * \param extra_cellular_conductivity conductivity of the extra-cellular medium
          */
-        template <typename Point3Ds, typename Vector, typename SegmentIdTy>
+        template <typename Point3Ds, typename Vector>
         LFPCalculator(MPI_Comm comm,
                       const Point3Ds& seg_start,
                       const Point3Ds& seg_end,
@@ -257,26 +257,6 @@ namespace coreneuron {
         );
     }
     
-    template <LFPCalculatorType Ty, typename Point3Ds>
-        LFPCalculator<Ty> mkLFPCalculator(NrnThread* nt, const Point3Ds& electrodes,
-                      double extra_cellular_conductivity, double radius_factor = 1.0) {
-	const auto* mapinfo = static_cast<NrnThreadMappingInfo*>(nt->mapping);
-	std::vector<std::array<double, 3>> seg_pos_starts(mapinfo->segment_ids.size());
-	std::vector<std::array<double, 3>> seg_pos_ends(mapinfo->segment_ids.size());
-        std::vector<double> radius(mapinfo->segment_ids.size());
-	for (size_t k = 0; k < mapinfo->segment_ids.size(); ++k)  {
-            std::tie(seg_pos_starts[k], seg_pos_ends[k]) = mapinfo->segment_positions.at(mapinfo->segment_ids[k]);
-	    radius[k] = mapinfo->radius.at(mapinfo->segment_ids[k]) * radius_factor;
-        }
-        return LFPCalculator<Ty>(
-			seg_pos_starts,
-			seg_pos_ends,
-			radius,
-                        segment_ids,                       
-			electrodes,
-                        extra_cellular_conductivity
-			);
-    }
 			
 };
 
