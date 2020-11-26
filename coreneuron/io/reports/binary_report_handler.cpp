@@ -49,6 +49,13 @@ void BinaryReportHandler::register_compartment_report(const NrnThread& nt,
     register_report(nt, config, vars_to_report, create_extra);
 }
 
+void BinaryReportHandler::register_lfp_report(const NrnThread& nt,
+                                              ReportConfiguration& config,
+                                              const VarsToReport& vars_to_report) {
+    create_extra_func create_extra = create_compartment_extra;
+    register_report(nt, config, vars_to_report, create_extra);
+}
+
 void BinaryReportHandler::register_custom_report(const NrnThread& nt,
                                                  ReportConfiguration& config,
                                                  const VarsToReport& vars_to_report) {

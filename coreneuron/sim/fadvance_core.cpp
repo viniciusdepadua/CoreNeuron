@@ -313,6 +313,11 @@ static void* nrn_fixed_step_thread(NrnThread* nth) {
        events up to t+dt/2 */
     Instrumentor::phase_begin("timestep");
 
+    for( auto& value: nth->_lfp ) {
+        value += 0.1;
+    }
+    nth->_actual_lfp = nth->_lfp.data();
+
     {
         Instrumentor::phase p("deliver_events");
         deliver_net_events(nth);

@@ -41,9 +41,8 @@ void ReportHandler::create_report(double dt, double tstop, double delay) {
                 register_compartment_report(nt, m_report_config, vars_to_report);
                 break;
             case LFPReport:
-                vars_to_report =
-                    get_lfp_vars_to_report(nt, m_report_config.target, nt._actual_lfp);
-                register_compartment_report(nt, m_report_config, vars_to_report);
+                vars_to_report = get_lfp_vars_to_report(nt, m_report_config.target, nt._actual_lfp);
+                register_lfp_report(nt, m_report_config, vars_to_report);
                 break;
             default:
                 vars_to_report = get_custom_vars_to_report(nt, m_report_config, nodes_to_gid);
@@ -72,6 +71,13 @@ void ReportHandler::register_soma_report(const NrnThread& nt,
     }
 }
 void ReportHandler::register_compartment_report(const NrnThread& nt,
+                                                ReportConfiguration& config,
+                                                const VarsToReport& vars_to_report) {
+    if (nrnmpi_myid == 0) {
+        std::cerr << "[WARNING] : Format '" << config.format << "' in report '" << config.output_path << "' not supported.\n";
+    }
+}
+void ReportHandler::register_lfp_report(const NrnThread& nt,
                                                 ReportConfiguration& config,
                                                 const VarsToReport& vars_to_report) {
     if (nrnmpi_myid == 0) {

@@ -20,6 +20,9 @@ class SonataReportHandler : public ReportHandler {
     void register_compartment_report(const NrnThread& nt,
                                      ReportConfiguration& config,
                                      const VarsToReport& vars_to_report) override;
+    void register_lfp_report(const NrnThread& nt,
+                            ReportConfiguration& config,
+                            const VarsToReport& vars_to_report) override;
     void register_custom_report(const NrnThread& nt,
                                 ReportConfiguration& config,
                                 const VarsToReport& vars_to_report) override;
