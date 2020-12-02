@@ -167,12 +167,13 @@ set_target_properties(
 # =============================================================================
 add_custom_target(
   nrniv-core ALL
-  COMMAND ${CMAKE_BINARY_DIR}/bin/nrnivmodl-core -b STATIC
-          -m ${CORENRN_MOD2CPP_BINARY}
+  COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_BINARY_DIR}/bin/nrnivmodl-core.py
+          --build-type=STATIC --binary ${CORENRN_MOD2CPP_BINARY}
+          --verbose
           ${CORENEURON_PROJECT_SOURCE_DIR}/tests/integration/ring_gap/mod
   WORKING_DIRECTORY
     ${CMAKE_BINARY_DIR}/bin
-    BYPRODUCTS
+  BYPRODUCTS
     ${CMAKE_BINARY_DIR}/bin/${CMAKE_SYSTEM_PROCESSOR}/special-core
   COMMENT "Running nrnivmodl-core with halfgap.mod")
 add_dependencies(nrniv-core scopmath coreneuron ${NMODL_TARGET_TO_DEPEND})

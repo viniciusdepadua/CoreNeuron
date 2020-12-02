@@ -2,6 +2,18 @@
 # CoreNEURON executable called "special-core" from the provided mod files.
 # Mod files are looked up in the MODS_PATH directory.
 
+OUTPUT_DIR = @CMAKE_HOST_SYSTEM_PROCESSOR@
+
+# Directory where cpp files are generated for each mod file
+MOD_TO_CPP_DIR = $(OUTPUT_DIR)/corenrn/mod2c
+
+# Directory where cpp files are compiled
+MOD_OBJS_DIR = $(OUTPUT_DIR)/corenrn/build
+
+# Find the directory of the current makefile
+SELF_DIR := $(dir $(lastword $(MAKEFILE_LIST)))
+include $(SELF_DIR)/GeneratedMakefile.make
+
 # Current system OS
 OS_NAME := $(shell uname)
 
@@ -11,9 +23,8 @@ COMMA_OP =,
 # Default variables for various targets
 MECHLIB_SUFFIX =
 MODS_PATH = .
-OUTPUT_DIR = @CMAKE_HOST_SYSTEM_PROCESSOR@
 DESTDIR =
-TARGET_LIB_TYPE = $(BUILD_TYPE)
+BUILD_TYPE = @COMPILE_LIBRARY_TYPE@
 
 # CoreNEURON installation directories
 CORENRN_BIN_DIR := $(ROOT)/bin
@@ -28,11 +39,8 @@ DERIVIMPLICIT_CPP_FILE = $(CORENRN_SHARE_CORENRN_DIR)/dimplic.cpp
 # name of the CoreNEURON binary
 SPECIAL_EXE  = $(OUTPUT_DIR)/special-core
 
-# Directory where cpp files are generated for each mod file
-MOD_TO_CPP_DIR = $(OUTPUT_DIR)/corenrn/mod2c
-
-# Directory where cpp files are compiled
-MOD_OBJS_DIR = $(OUTPUT_DIR)/corenrn/build
+# By default, build $(SPECIAL_EXE)
+all: $(SPECIAL_EXE)
 
 # Linked libraries gathered by CMake
 LDFLAGS = $(LINKFLAGS) @CORENRN_LINK_DEFS@
@@ -56,6 +64,18 @@ CXX_SHARED_LIB_CMD = $(CXX) $(CXXFLAGS) @CMAKE_SHARED_LIBRARY_CREATE_CXX_FLAGS@ 
 ISPC = @CMAKE_ISPC_COMPILER@
 ISPC_COMPILE_CMD = $(ISPC) @CMAKE_ISPC_FLAGS@ -I$(CORENRN_INC_DIR)
 
+# NMODL compiler
+NMODL_COMPILER ?= $(ROOT)/bin/nmodl
+
+# MOD2C compiler
+MOD2C_COMPILER ?= @CORENRN_MOD2C_COMPILER@
+
+# Binary of MOD2C/NMODL depending on CMake option activated
+ifeq (@nmodl_FOUND@, TRUE)
+    INCLUDES += -I@CORENRN_MOD2CPP_INCLUDE@
+    ISPC_COMPILE_CMD += -I@CORENRN_MOD2CPP_INCLUDE@
+endif
+
 # env variables required for mod2c or nmodl
 MOD2CPP_ENV_VAR = PYTHONPATH=@CORENRN_NMODL_PYTHONPATH@:${CORENRN_LIB_DIR}/python MODLUNIT=$(CORENRN_SHARE_MOD2CPP_DIR)/nrnunits.lib
 
@@ -72,7 +92,7 @@ DIMPLIC_OBJ  = $(MOD_OBJS_DIR)/_dimplic.o
 ENGINEMECH_OBJ = $(MOD_OBJS_DIR)/enginemech.o
 
 # Depending on static/shared build, determine library name and it's suffix
-ifeq ($(TARGET_LIB_TYPE), STATIC)
+ifeq ($(BUILD_TYPE), STATIC)
     LIB_SUFFIX = @CMAKE_STATIC_LIBRARY_SUFFIX@
     corenrnmech_lib_target = coremech_lib_static
 else
@@ -80,62 +100,13 @@ else
     corenrnmech_lib_target = coremech_lib_shared
 endif
 
-# Binary of MOD2C/NMODL depending on CMake option activated
-ifeq (@nmodl_FOUND@, TRUE)
-    MOD2CPP_BINARY_PATH = $(if $(MOD2CPP_BINARY),$(MOD2CPP_BINARY), @CORENRN_MOD2CPP_BINARY@)
-    INCLUDES += -I@CORENRN_MOD2CPP_INCLUDE@
-    ISPC_COMPILE_CMD += -I@CORENRN_MOD2CPP_INCLUDE@
-else
-    MOD2CPP_BINARY_PATH = $(if $(MOD2CPP_BINARY),$(MOD2CPP_BINARY), $(CORENRN_BIN_DIR)/@nmodl_binary_name@)
-endif
-
-# MOD files with full path, without path and names without .mod extension
-mod_files_paths = $(sort $(wildcard $(MODS_PATH)/*.mod))
-mod_files_names = $(sort $(notdir $(wildcard $(MODS_PATH)/*.mod)))
-mod_files_no_ext = $(mod_files_names:.mod=)
-
-# Find out artificial and non-artificial cells for ISPC backend
-define check_file
-	# if ISPC is active then only separate mod files
-	ifeq (@CORENRN_ENABLE_ISPC@, ON)
-		ifeq ($(shell grep -q $(2) $(1); echo $$?), 0)
-			mod_art_files += $(MOD_TO_CPP_DIR)/$(notdir $(1))
-		else
-			mod_non_art_files += $(MOD_TO_CPP_DIR)/$(notdir $(1))
-		endif
-	else
-		mod_all_files += $(MOD_TO_CPP_DIR)/$(notdir $(1))
-	endif
-endef
-
-# Iterate over all available mod files and make group
-$(foreach mod_file, $(mod_files_paths), $(eval $(call check_file, $(mod_file), ARTIFICIAL_CELL)))
-
-# With ispc, artificial cells get translated as regular CPP backend
-# Otherwise, all mod files are compiled as CPP backend
-ifeq (@CORENRN_ENABLE_ISPC@, ON)
-	mod_files_for_cpp_backend = $(mod_art_files)
-else
-	mod_files_for_cpp_backend = $(mod_all_files)
-endif
-
-# CPP files and their obkects
-mod_cpp_files = $(patsubst %.mod,%.cpp,$(mod_files_for_cpp_backend))
-mod_cpp_objs = $(addprefix $(MOD_OBJS_DIR)/,$(addsuffix .o,$(basename $(mod_files_no_ext))))
-
-# For ISPC backend, we use all non-artificial cells
-mod_ispc_srcs_names = $(notdir $(mod_non_art_files))
-mod_ispc_files = $(patsubst %.mod,%.ispc,$(mod_non_art_files))
-mod_ispc_cpp_files = $(patsubst %.mod,%.cpp,$(mod_non_art_files))
-mod_ispc_objs = $(addprefix $(MOD_OBJS_DIR)/,$(addsuffix .obj,$(basename $(mod_ispc_srcs_names))))
-
 # We use $ORIGIN (@loader_path in OSX)
 ORIGIN_RPATH := $(if $(filter Darwin,$(OS_NAME)),@loader_path,$$ORIGIN)
 SONAME_OPTION := -Wl,$(if $(filter Darwin,$(OS_NAME)),-install_name${COMMA_OP}@rpath/,-soname${COMMA_OP})$(notdir ${COREMECH_LIB_PATH})
 LIB_RPATH = $(if $(DESTDIR),$(DESTDIR)/lib,$(ORIGIN_RPATH))
 
 # All objects used during build
-ALL_OBJS = $(MOD_FUNC_OBJ) $(DIMPLIC_OBJ) $(mod_cpp_objs) $(mod_ispc_objs)
+ALL_OBJS = $(MOD_FUNC_OBJ) $(DIMPLIC_OBJ) $(PRODUCED_OBJS_FROM_CPP) $(PRODUCED_OBJS_FROM_ISPC)
 
 # Colors for pretty printing
 C_RESET := \033[0m
@@ -186,30 +157,14 @@ coremech_lib_static: $(ALL_OBJS) $(ENGINEMECH_OBJ) build_always
 	rm -f ${COREMECH_LIB_PATH}; \
 	ar cq ${COREMECH_LIB_PATH} $(ENGINEMECH_OBJ) $(ALL_OBJS) $(MOD_OBJS_DIR)/scopmath/*.o;
 
-# compile cpp files to .o
-$(MOD_OBJS_DIR)/%.o: $(MOD_TO_CPP_DIR)/%.cpp $(KINDERIV_H_PATH) | $(MOD_OBJS_DIR)
-	$(CXX_COMPILE_CMD) -c $< -o $@
-
-# compile ispc files to .obj
-$(MOD_OBJS_DIR)/%.obj: $(MOD_TO_CPP_DIR)/%.ispc | $(MOD_OBJS_DIR)
-	$(ISPC_COMPILE_CMD) $< -o $@
-
-# translate MOD files to ISPC using NMODL
-$(mod_ispc_files): $(MOD_TO_CPP_DIR)/%.ispc: $(MODS_PATH)/%.mod | $(MOD_TO_CPP_DIR)
-	$(MOD2CPP_ENV_VAR) $(MOD2CPP_BINARY_PATH) $< -o $(MOD_TO_CPP_DIR)/ $(NMODL_FLAGS_ISPC)
-
-# translate MOD files to CPP using mod2c/NMODL
-$(mod_cpp_files): $(MOD_TO_CPP_DIR)/%.cpp: $(MODS_PATH)/%.mod | $(MOD_TO_CPP_DIR)
-	$(MOD2CPP_ENV_VAR) $(MOD2CPP_BINARY_PATH) $< -o $(MOD_TO_CPP_DIR)/ $(MOD2CPP_FLAGS_C)
-
-# static pattern to set up the dependencies for the previous recipe
-$(mod_ispc_cpp_files): $(MOD_TO_CPP_DIR)/%.cpp: $(MOD_TO_CPP_DIR)/%.ispc
-
 # generate mod registration function. Dont overwrite if it's not changed
 $(MOD_FUNC_CPP): build_always | $(MOD_TO_CPP_DIR)
-	@PERL_EXECUTABLE@ $(CORENRN_SHARE_CORENRN_DIR)/mod_func.c.pl $(mod_files_names) > $(MOD_FUNC_CPP).tmp
+	@PERL_EXECUTABLE@ $(CORENRN_SHARE_CORENRN_DIR)/mod_func.c.pl $(MOD_FILES) > $(MOD_FUNC_CPP).tmp
 	diff -q $(MOD_FUNC_CPP).tmp $(MOD_FUNC_CPP) || \
 	mv $(MOD_FUNC_CPP).tmp $(MOD_FUNC_CPP)
+
+$(MOD_FUNC_OBJ) $(DIMPLIC_OBJ): $(MOD_OBJS_DIR)/%.o: $(MOD_TO_CPP_DIR)/%.cpp $(KINDERIV_H_PATH) | $(MOD_OBJS_DIR)
+	$(CXX_COMPILE_CMD) -c $< -o $@
 
 # header to avoid function callbacks using function pointers
 $(KINDERIV_H_PATH): $(mod_cpp_files) build_always | $(MOD_TO_CPP_DIR)
