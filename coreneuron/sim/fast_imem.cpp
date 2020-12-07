@@ -73,18 +73,11 @@ void nrn_calc_fast_imem(NrnThread* nt) {
     double* fast_imem_d = nt->nrn_fast_imem->nrn_sav_d;
     double* fast_imem_rhs = nt->nrn_fast_imem->nrn_sav_rhs;
 
-    const auto* mapinfo = static_cast<NrnThreadMappingInfo*>(nt->mapping);
-    std::array<double, 3> seg_pos_start;
-    std::array<double, 3> seg_pos_end;
-    for(const auto segment_id: mapinfo->segment_ids) {
-        seg_pos_start = mapinfo->segment_positions.at(segment_id).first;
-        seg_pos_end = mapinfo->segment_positions.at(segment_id).second;
-
-        fast_imem_rhs[segment_id] = (fast_imem_d[segment_id]*vec_rhs[segment_id] + fast_imem_rhs[segment_id])*vec_area[segment_id]*0.01;
-    }
-    /*for (int i = i1; i < i3 ; ++i) {
+    for (int i = i1; i < i3 ; ++i) {
         fast_imem_rhs[i] = (fast_imem_d[i]*vec_rhs[i] + fast_imem_rhs[i])*vec_area[i]*0.01;
-    }*/
+    }
+    
+    nt->lfp_calc.lfp(fast_imem_rhs);
 }
 
 }
