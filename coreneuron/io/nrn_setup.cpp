@@ -933,7 +933,7 @@ void read_phase3(NrnThread& nt, UserParams& userParams) {
     double extracellular_conductivity{3.54}; //[siemens/m]
     std::vector<std::array<double,3>> electrodes = {{0.0,0.0,0.0}};
     nt.lfp_calc = new LFPCalculator<LFPCalculatorType::LineSource>(
-                             comm, 
+                             MPI_COMM_WORLD, 
                              seg_pos_start,
                              seg_pos_end,
                              radii,
