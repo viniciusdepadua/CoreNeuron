@@ -48,6 +48,7 @@ THE POSSIBILITY OF SUCH DAMAGE.
 #include "coreneuron/permute/node_permute.h"
 #include "coreneuron/permute/cellorder.hpp"
 #include "coreneuron/io/nrnsection_mapping.hpp"
+#include "coreneuron/io/lfp.hpp"
 #include "coreneuron/utils/nrnoc_aux.hpp"
 #include "coreneuron/io/phase1.hpp"
 #include "coreneuron/io/phase2.hpp"
@@ -823,8 +824,9 @@ void nrn_cleanup() {
         // mapping information is available only for non-empty NrnThread
         if (nt->mapping && nt->ncell) {
             delete ((NrnThreadMappingInfo*)nt->mapping);
+            delete nt->lfp_calc;
         }
-
+		
         free_memory(nt->_ml_list);
 
         if (nt->nrn_fast_imem) {
@@ -917,12 +919,35 @@ void read_phase3(NrnThread& nt, UserParams& userParams) {
 
         ntmapping->add_cell_mapping(cmap);
     }
+    
+    std::vector<std::array<double, 3>> seg_pos_start, seg_pos_end;
+    std::vector<double> radii;
+    seg_pos_start.reserve(ntmapping->segment_ids.size());
+    seg_pos_end.reserve(ntmapping->segment_ids.size());
+    radii.reserve(ntmapping->segment_ids.size());
+    for(const auto segment_id: ntmapping->segment_ids) {        
+        seg_pos_start.push_back(ntmapping->segment_positions.at(segment_id).first);
+        seg_pos_end.push_back(ntmapping->segment_positions.at(segment_id).second);
+        radii.push_back(ntmapping->radii.at(segment_id));
+    }
+    double extracellular_conductivity{3.54}; //[siemens/m]
+    std::vector<std::array<double,3>> electrodes = {{0.0,0.0,0.0}};
+    nt.lfp_calc = new LFPCalculator<LFPCalculatorType::LineSource>(
+                             comm, 
+                             seg_pos_start,
+                             seg_pos_end,
+                             radii,
+                             ntmapping->segment_ids,
+                             electrodes,
+                             extracellular_conductivity
+                             );
 
     // make number #cells match with mapping size
     nrn_assert((int)ntmapping->size() == nt.ncell);
 
     // set pointer in NrnThread
     nt.mapping = (void*)ntmapping;
+
 }
 
 static size_t memb_list_size(NrnThreadMembList* tml) {
