@@ -220,7 +220,7 @@ namespace coreneuron {
 
         std::vector<std::vector<double> > m;
         MPI_Comm comm_;
-        std::vector<SegmentIdTy> segment_ids_;
+        const std::vector<SegmentIdTy>& segment_ids_;
     };
 
     template <>
