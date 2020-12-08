@@ -147,25 +147,27 @@ VarsToReport ReportHandler::get_compartment_vars_to_report(const NrnThread& nt,
                     << gid << '\n';
                 nrn_abort(1);
             }
-            //std::cout << "GID: " << gid << std::endl;
+            /*std::cout << "===GID: " << gid << std::endl;
+            for (const auto& segment_id: mapinfo->segment_ids) {
+                std::cout << "++Segment_id: " << segment_id << std::endl;
+                std::cout << "--Radius: " << mapinfo->radii.at(segment_id) << std::endl;
+                for( auto const& pos : mapinfo->segment_positions.at(segment_id).first ) {
+                    std::cout << "**start: " << pos << ",";
+                }
+                for( auto const& pos : mapinfo->segment_positions.at(segment_id).second ) {
+                    std::cout << "    end: " << pos << ",";
+                }
+                std::cout << std::endl;
+            }*/
             std::vector<VarWithMapping> to_report;
             to_report.reserve(cell_mapping->size());
             const auto& secmapvec = cell_mapping->secmapvec;
             for (const auto& s : secmapvec) {
                 for (auto& sm : s->secmap) {
                     int compartment_id = sm.first;
-                    //std::cout << "  +++compartment: " << compartment_id << std::endl;
                     auto& vec = sm.second;
                     for (const auto& idx : vec) {
                         auto& positions = s->segmap[idx];
-                        /*std::cout << "    --"<<idx << ": ";
-                        for( auto const& pos : positions.first ) {
-                            std::cout << "start: " << pos << ",";
-                        }
-                        for( auto const& pos : positions.second ) {
-                            std::cout << "    end: " << pos << ",";
-                        }
-                        std::cout << std::endl;*/
                         /** corresponding voltage in coreneuron voltage array */
                         double* variable = report_variable + idx;
                         to_report.push_back(VarWithMapping(compartment_id, variable));

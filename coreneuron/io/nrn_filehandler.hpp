@@ -147,15 +147,18 @@ class FileHandler {
             std::vector<int> sec, seg;
             std::vector<double> pos_start;
             std::vector<double> pos_end;
+            std::vector<double> radius;
             sec.reserve(nseg);
             seg.reserve(nseg);
             pos_start.reserve(npos);
             pos_end.reserve(npos);
+            radius.reserve(nseg);
 
             read_array<int>(&sec[0], nseg);
             read_array<int>(&seg[0], nseg);
             read_array<double>(&pos_start[0], npos);
             read_array<double>(&pos_end[0], npos);
+            read_array<double>(&radius[0], nseg);
 
             std::array<double, 3> seg_pos_start;
             std::array<double, 3> seg_pos_end;
@@ -166,6 +169,7 @@ class FileHandler {
                 // mapinfo->add_positions(seg[i], seg_pos_start, seg_pos_end);
                 ntmapping->add_segment_id(seg[i]);
                 ntmapping->add_positions(seg[i], seg_pos_start, seg_pos_end);
+                ntmapping->add_segment_radius(seg[i], radius[i]);
             }
         }
         return nseg;

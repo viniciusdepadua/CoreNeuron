@@ -57,7 +57,7 @@ namespace coreneuron {
             const F f
     )
     {
-        assert(radius > 0.0);
+        nrn_assert(radius > 0.0);
         Array3<F> es = axp(e_pos, -1.0, seg_pos);
         return f / std::max(norm<Point3D, F>(es),radius);
     }
@@ -81,7 +81,7 @@ namespace coreneuron {
             const F f
     )
     {
-        assert(radius >= F());
+        nrn_assert(radius >= F());
         Array3<F> dx = axp(seg_1, -1.0, seg_0);
         Array3<F> de = axp(e_pos, -1.0, seg_0);
         F dx2(dot<Array3<F>,F>(dx, dx));

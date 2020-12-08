@@ -153,6 +153,8 @@ struct NrnThreadMappingInfo {
     /** map containing segment ids an its respective start and end positions */
     segpos_map_type segment_positions;
 
+    std::unordered_map<int, double> radii;
+
     /** @brief number of cells */
     size_t size() const {
         return mappingvec.size();
@@ -187,8 +189,13 @@ struct NrnThreadMappingInfo {
         segment_ids.push_back(segment_id);
     }
 
+    /** @brief add the radius of a segment_id */
+    void add_segment_radius(const int segment_id, double radius) {
+        radii.insert({segment_id, radius});
+    }
+
     /** @brief add start and end position information of new segment */
-    void add_positions(int segment_id, const Point3D& pos_start, const Point3D& pos_end) {
+    void add_positions(const int segment_id, const Point3D& pos_start, const Point3D& pos_end) {
         segment_positions.insert({segment_id, std::make_pair(pos_start, pos_end)});
     }
 };

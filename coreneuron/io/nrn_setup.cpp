@@ -52,6 +52,7 @@ THE POSSIBILITY OF SUCH DAMAGE.
 #include "coreneuron/utils/nrnoc_aux.hpp"
 #include "coreneuron/io/phase1.hpp"
 #include "coreneuron/io/phase2.hpp"
+#include "coreneuron/mpi/nrnmpi_impl.h"
 
 // callbacks into nrn/src/nrniv/nrnbbcore_write.cpp
 #include "coreneuron/sim/fast_imem.hpp"
@@ -826,7 +827,7 @@ void nrn_cleanup() {
             delete ((NrnThreadMappingInfo*)nt->mapping);
             delete nt->lfp_calc;
         }
-		
+
         free_memory(nt->_ml_list);
 
         if (nt->nrn_fast_imem) {
@@ -919,13 +920,13 @@ void read_phase3(NrnThread& nt, UserParams& userParams) {
 
         ntmapping->add_cell_mapping(cmap);
     }
-    
+
     std::vector<std::array<double, 3>> seg_pos_start, seg_pos_end;
     std::vector<double> radii;
     seg_pos_start.reserve(ntmapping->segment_ids.size());
     seg_pos_end.reserve(ntmapping->segment_ids.size());
     radii.reserve(ntmapping->segment_ids.size());
-    for(const auto segment_id: ntmapping->segment_ids) {        
+    for(const auto segment_id: ntmapping->segment_ids) {
         seg_pos_start.push_back(ntmapping->segment_positions.at(segment_id).first);
         seg_pos_end.push_back(ntmapping->segment_positions.at(segment_id).second);
         radii.push_back(ntmapping->radii.at(segment_id));
@@ -933,7 +934,7 @@ void read_phase3(NrnThread& nt, UserParams& userParams) {
     double extracellular_conductivity{3.54}; //[siemens/m]
     std::vector<std::array<double,3>> electrodes = {{0.0,0.0,0.0}};
     nt.lfp_calc = new LFPCalculator<LFPCalculatorType::LineSource>(
-                             MPI_COMM_WORLD, 
+                             nrnmpi_comm,
                              seg_pos_start,
                              seg_pos_end,
                              radii,
