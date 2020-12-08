@@ -77,7 +77,7 @@ void nrn_calc_fast_imem(NrnThread* nt) {
         fast_imem_rhs[i] = (fast_imem_d[i]*vec_rhs[i] + fast_imem_rhs[i])*vec_area[i]*0.01;
     }
     
-    nt->lfp_calc.lfp(fast_imem_rhs);
+    nt->lfp_calc->lfp(fast_imem_rhs);
 }
 
 }
