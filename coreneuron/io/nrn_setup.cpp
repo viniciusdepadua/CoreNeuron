@@ -825,7 +825,6 @@ void nrn_cleanup() {
         // mapping information is available only for non-empty NrnThread
         if (nt->mapping && nt->ncell) {
             delete ((NrnThreadMappingInfo*)nt->mapping);
-            delete nt->lfp_calc;
         }
 
         free_memory(nt->_ml_list);
@@ -931,9 +930,9 @@ void read_phase3(NrnThread& nt, UserParams& userParams) {
         seg_pos_end.push_back(ntmapping->segment_positions.at(segment_id).second);
         radii.push_back(ntmapping->radii.at(segment_id));
     }
-    double extracellular_conductivity{3.54}; //[siemens/m]
+    double extracellular_conductivity{0.28248}; //[siemens/m]
     std::vector<std::array<double,3>> electrodes = {{0.0,0.0,0.0}};
-    nt.lfp_calc = new LFPCalculator<LFPCalculatorType::LineSource>(
+    nt.lfp_calc = std::make_unique<LFPCalculator<LFPCalculatorType::LineSource>>(
                              nrnmpi_comm,
                              seg_pos_start,
                              seg_pos_end,

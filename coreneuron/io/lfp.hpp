@@ -171,12 +171,19 @@ namespace coreneuron {
             if (seg_start.size() != seg_end.size()) {
                 throw std::logic_error("Wrong number of segment starts or ends.");
             }
+            if (seg_start.size() != radius.size()) {
+                throw std::logic_error("Wrong number of radius size.");
+            }
             double f(1.0 / (extra_cellular_conductivity * 4.0 * 3.141592653589));
+
             m.resize(electrodes.size());
             for (size_t k = 0; k < electrodes.size(); ++k) {
                 auto& ms = m[k];
                 ms.resize(seg_start.size());
                 for (size_t l = 0; l < seg_start.size(); l++) {
+                    /*std::cout << "Seg_start[" << l << "] = " << seg_start[l][0] << ", " << seg_start[l][1] << ", " << seg_start[l][2] << std::endl;
+                    std::cout << "seg_end[" << l << "] = " << seg_end[l][0] << ", " << seg_end[l][1] << ", " << seg_end[l][2] << std::endl;
+                    std::cout << "radius[" << l << "] = " << radius[l] << std::endl;*/
                     ms[l] = getFactor(
                             electrodes[k],
                             seg_start[l],
@@ -188,7 +195,7 @@ namespace coreneuron {
         }
 
         template <typename Vector>
-        std::vector<double> lfp(const Vector& membrane_current) {
+        void lfp(const Vector& membrane_current) {
             std::vector<double> res(m.size());
             for (size_t k = 0; k < m.size(); ++k) {
                 res[k] = 0.0;
@@ -205,9 +212,10 @@ namespace coreneuron {
                                     MPI_SUM,
                                     comm_
             );
-
-            return res_reduced;
+            lfp_values = res_reduced;
         }
+
+        std::vector<double> lfp_values;
 
     private:
 

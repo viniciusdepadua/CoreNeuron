@@ -34,6 +34,7 @@ THE POSSIBILITY OF SUCH DAMAGE.
 #include "coreneuron/mpi/nrnmpi.h"
 #include "coreneuron/io/lfp.hpp"
 #include <vector>
+#include <memory>
 
 namespace coreneuron {
 class NetCon;
@@ -154,7 +155,7 @@ struct NrnThread : public MemoryManaged {
 
     int* _watch_types = nullptr;                   /* nullptr or 0 terminated array of integers */
     void* mapping = nullptr;                       /* section to segment mapping information */
-    LFPCalculator<LFPCalculatorType::LineSource>* lfp_calc = nullptr;
+    std::unique_ptr<LFPCalculator<LFPCalculatorType::LineSource>> lfp_calc;
     TrajectoryRequests* trajec_requests = nullptr; /* per time step values returned to NEURON */
 
     /* Needed in case there are FOR_NETCON statements in use. */

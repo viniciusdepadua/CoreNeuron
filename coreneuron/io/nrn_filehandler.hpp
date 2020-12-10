@@ -167,6 +167,7 @@ class FileHandler {
                 std::copy(&pos_start[3*i], &pos_start[3*i] + 3, seg_pos_start.begin());
                 std::copy(&pos_end[3*i], &pos_end[3*i] + 3, seg_pos_end.begin());
                 // mapinfo->add_positions(seg[i], seg_pos_start, seg_pos_end);
+
                 ntmapping->add_segment_id(seg[i]);
                 ntmapping->add_positions(seg[i], seg_pos_start, seg_pos_end);
                 ntmapping->add_segment_radius(seg[i], radius[i]);

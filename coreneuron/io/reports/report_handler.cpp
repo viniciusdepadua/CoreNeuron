@@ -41,7 +41,7 @@ void ReportHandler::create_report(double dt, double tstop, double delay) {
                 register_compartment_report(nt, m_report_config, vars_to_report);
                 break;
             case LFPReport:
-                vars_to_report = get_lfp_vars_to_report(nt, m_report_config.target, nt._actual_lfp);
+                vars_to_report = get_lfp_vars_to_report(nt, m_report_config.target, nt.lfp_calc->lfp_values.data());
                 register_lfp_report(nt, m_report_config, vars_to_report);
                 break;
             default:
@@ -213,7 +213,7 @@ VarsToReport ReportHandler::get_lfp_vars_to_report(const NrnThread& nt,
     std::vector<VarWithMapping> to_report;
     // Add all electrodes to the first gid for now
     int gid = nt.presyns[0].gid_;
-    std::vector<int> electrode_ids = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+    std::vector<int> electrode_ids = {0};
     for (const auto& electrode_id : electrode_ids) {
         double* variable = report_variable + electrode_id;
         to_report.push_back(VarWithMapping(electrode_id, variable));
