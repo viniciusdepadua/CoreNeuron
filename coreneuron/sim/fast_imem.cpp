@@ -73,8 +73,6 @@ void nrn_calc_fast_imem(NrnThread* nt) {
     double* fast_imem_d = nt->nrn_fast_imem->nrn_sav_d;
     double* fast_imem_rhs = nt->nrn_fast_imem->nrn_sav_rhs;
 
-    std::cout << " -------------------------------" << std::endl;
-
     for (int i = i1; i < i3 ; ++i) {
         fast_imem_rhs[i] = (fast_imem_d[i]*vec_rhs[i] + fast_imem_rhs[i])*vec_area[i]*0.01;
         /*std::cout << "fast_imem_d[" << i << "] = " << fast_imem_d[i] << std::endl;
@@ -84,29 +82,24 @@ void nrn_calc_fast_imem(NrnThread* nt) {
 
     if(nt->ncell) {
         const auto* mapinfo = static_cast<NrnThreadMappingInfo*>(nt->mapping);
-        std::cout << "ALL segment ids: size() = " << mapinfo->all_segment_ids.size() << std::endl;
-        for(int i=0; i<20; i++) {
-            std::cout << mapinfo->all_segment_ids[i] << ", ";
+        if(nt->_t == 0) {
+            std::cout << "VALID segment ids: size() = " << mapinfo->segment_ids.size() << std::endl;
+            for(int i=0; i<20; i++) {
+                std::cout << mapinfo->segment_ids[i] << ", ";
+            }
+            std::cout << " ... " << std::endl;
+            std::vector<int> axon_ids = {3, 12, 13, 14, 15, 16, 17};
+            for (auto segment: axon_ids) {
+                std::cout <<"fast_imem_d[" << segment << "] = " << fast_imem_rhs[segment] << std::endl;
+            }
         }
-        std::cout << std::endl;
-        std::cout << "VALID segment ids: size() = " << mapinfo->segment_ids.size() << std::endl;
-        for(int i=0; i<20; i++) {
-            std::cout << mapinfo->segment_ids[i] << ", ";
-        }
-        std::cout << std::endl;
-        std::vector<int> axon_ids = {3, 12, 13, 14, 15, 16, 17};
-        for (auto segment: axon_ids) {
-            std::cout <<"fast_imem_d[" << segment << "] = " << fast_imem_rhs[segment] << std::endl;
-        }
-        /*std::vector<double> currents (fast_imem_rhs, fast_imem_rhs + i3);
-        for(int i=0; i<10; i++) {
-            std::cout << currents[i] << ", ";
-        }
-        std::cout << std::endl;
-        std::cout << "Size of currents: " << currents.size() << std::endl;
-        double sum_currents = std::accumulate(currents.begin(), currents.end(), 0);
-        std::cout << "Sum of currents in tstep " << nt->_t << ": " << sum_currents << std::endl;*/
         nt->lfp_calc->lfp(fast_imem_rhs);
+        std::cout << " -------------------------------" << std::endl;
+        std::cout << "LFP calculation for tstep " << nt->_t << ": " << std::endl;
+        for(auto value: nt->lfp_calc->lfp_values) {
+            std::cout << value << ", ";
+        }
+        std::cout << std::endl;
     }
 }
 
