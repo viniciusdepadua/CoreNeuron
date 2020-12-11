@@ -57,7 +57,7 @@ namespace coreneuron {
             const F f
     )
     {
-        nrn_assert(radius > 0.0);
+        nrn_assert(radius >= 0.0);
         Array3<F> es = axp(e_pos, -1.0, seg_pos);
         return f / std::max(norm<Point3D, F>(es),radius);
     }
@@ -81,7 +81,7 @@ namespace coreneuron {
             const F f
     )
     {
-        nrn_assert(radius >= F());
+        nrn_assert(radius >= 0.0);
         Array3<F> dx = axp(seg_1, -1.0, seg_0);
         Array3<F> de = axp(e_pos, -1.0, seg_0);
         F dx2(dot<Array3<F>,F>(dx, dx));
@@ -99,8 +99,10 @@ namespace coreneuron {
         F one_m_mu(1.0 - mu);
         auto log_integral = [&q2, &dxn](F a, F b) {
 		if (std::abs(q2) < 1.0e-20) {
-		    if (a * b < 0) {
-		       throw std::invalid_argument("Log integral: invalid arguments " + std::to_string(b) + " " + std::to_string(a) +".Likely electrode exactly on the segment and no flooring is present.");
+		    if (a * b <= 0) {
+		       throw std::invalid_argument(
+				"Log integral: invalid arguments " + std::to_string(b) + " " + std::to_string(a) +
+                                    ". Likely electrode exactly on the segment and no flooring is present.");
                     }
 		    return std::abs(std::log(b / a)) / dxn;
 		}
