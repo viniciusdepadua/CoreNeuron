@@ -51,14 +51,14 @@ class ModFiles():
 
 rules = {
     'ispc': r'''
-$(MOD_OBJS_DIR)/{ispc_file}: {mod_file}
+$(MOD_TO_CPP_DIR)/{ispc_file}: {mod_file}
 	$(info Generating for {mod_file})
 	$(MOD2CPP_ENV_VAR) $(MOD2CPP_BINARY_PATH) $< -o $(MOD_TO_CPP_DIR) $(MOD2CPP_BINARY_FLAG)
 
-$(MOD_OBJS_DIR)/{obj_file}: $(MOD_OBJS_DIR)/{ispc_file}
+$(MOD_OBJS_DIR)/{obj_file}: $(MOD_TO_CPP_DIR)/{ispc_file}
 	$(ISPC_COMPILE_CMD) $< -o $@
 
-$(MOD_TO_CPP_DIR)/{cpp_file}: $(MOD_OBJS_DIR)/{ispc_file}
+$(MOD_TO_CPP_DIR)/{cpp_file}: $(MOD_TO_CPP_DIR)/{ispc_file}
 
 $(MOD_OBJS_DIR)/{o_file}: $(MOD_TO_CPP_DIR)/{cpp_file}
 	$(CXX_COMPILE_CMD) -c $< -o $@
@@ -87,9 +87,10 @@ def parse_args():
     parser.add_argument('--nmodl', action='store_true')
 
     host_group = parser.add_mutually_exclusive_group()
-    host_group.add_argument('--cpp', action='store_false')
-    host_group.add_argument('--ispc', action='store_true')
-    host_group.add_argument('--omp', action='store_true')
+    host_group.add_argument('--cpp', action='store_const', dest='host_backend', const='cpp')
+    host_group.add_argument('--ispc', action='store_const', dest='host_backend', const='ispc')
+    host_group.add_argument('--omp', action='store_const', dest='host_backend', const='omp')
+    parser.set_defaults(host_backend='cpp')
 
     parser.add_argument('--gpu', choices=['cuda', 'OpenAcc'], const='OpenAcc', nargs='?')
 
@@ -122,11 +123,11 @@ class MakefileGenerator():
 
     def generateHost(self):
         if self.arguments.nmodl:
-            if self.arguments.cpp:
+            if self.arguments.host_backend == 'cpp':
                 return 'host --c'
-            elif self.arguments.ispc:
+            elif self.arguments.host_backend == 'ispc':
                 return 'host --ispc'
-            elif self.arguments.omp:
+            elif self.arguments.host_backend == 'omp':
                 return 'host --omp'
         return ''
 
@@ -141,6 +142,11 @@ class MakefileGenerator():
                     raise "Error"
         return ''
 
+    def generatePasses(self):
+        if self.arguments.nmodl:
+            return 'passes --inline'
+        return ''
+
     def generateCompilers(self):
         s = str()
         if self.arguments.binary:
@@ -148,18 +154,15 @@ class MakefileGenerator():
         else:
             s += 'MOD2CPP_BINARY_PATH = {}'.format('$(NMODL_COMPILER)' if self.arguments.nmodl else '$(MOD2C_COMPILER)')
         s += '\n'
-        s += 'MOD2CPP_BINARY_FLAG = ' + self.generateHost() + " " + self.generateGPU()
+        s += 'MOD2CPP_BINARY_FLAG = ' + self.generateHost() + " " + self.generateGPU() + " " + self.generatePasses()
         s += '\n'
-
-        if self.arguments.ispc:
-            s += 'ISPC_COMPILE_CMD=$(ISPC) --pic\n'
 
         return s
 
     def generateRules(self):
         s = str()
         mod_files = [os.path.basename(x) for x in self.files.get_files()]
-        if self.arguments.ispc:
+        if self.arguments.host_backend == 'ispc':
             cpp_files, ispc_files = self.files.get_ispc_files()
             cpp_files = self.files.get_cpp_files_for_rules(cpp_files)
             ispc_files = self.files.get_ispc_files_for_rules(ispc_files)
