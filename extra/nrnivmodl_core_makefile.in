@@ -2,7 +2,7 @@
 # CoreNEURON executable called "special-core" from the provided mod files.
 # Mod files are looked up in the MODS_PATH directory.
 
-OUTPUT_DIR = @CMAKE_HOST_SYSTEM_PROCESSOR@
+OUTPUT_DIR = $(WORK_DIR)/@CMAKE_HOST_SYSTEM_PROCESSOR@
 
 # Directory where cpp files are generated for each mod file
 MOD_TO_CPP_DIR = $(OUTPUT_DIR)/corenrn/mod2c

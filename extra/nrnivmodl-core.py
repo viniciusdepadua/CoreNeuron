@@ -5,7 +5,6 @@ import glob
 import os
 import shutil
 import subprocess
-import tempfile
 
 def get_root():
     parent_dir = os.path.dirname(os.path.realpath(__file__))
@@ -94,7 +93,7 @@ def parse_args():
 
     parser.add_argument('--gpu', choices=['cuda', 'OpenAcc'], const='OpenAcc', nargs='?')
 
-    parser.add_argument('--work-dir', default=tempfile.mkdtemp(prefix='nrnivmodl-core_'))
+    parser.add_argument('--work-dir', default=os.path.abspath("./output"))
 
     parser.add_argument('--build-type', choices=['STATIC', 'SHARED'])
 
@@ -185,6 +184,7 @@ class MakefileGenerator():
 
 if __name__ == '__main__':
     arguments = parse_args()
+    os.makedirs(arguments.work_dir)
     files = ModFiles(arguments.mod_dir, arguments.work_dir)
     print("Output dir = 'make -f {}'".format(arguments.work_dir))
     G = MakefileGenerator(arguments, files)
@@ -215,6 +215,8 @@ if __name__ == '__main__':
         make_args.append('install') 
     else:
         make_args.append('all')
+
+    make_args.append('WORK_DIR={}'.format(arguments.work_dir))
 
     print('Launching "{}"'.format(' '.join(make_args)))
     subprocess.call(make_args)
