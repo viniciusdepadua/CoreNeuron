@@ -144,14 +144,14 @@ add_library(scopmath STATIC ${CORENEURON_HEADER_FILES} ${SCOPMATH_CODE_FILES})
 
 target_link_libraries(
   coreneuron
-  ${MPI_C_LIBRARIES}
   ${reportinglib_LIBRARY}
   ${sonatareport_LIBRARY}
   ${link_cudacoreneuron}
   ${CUDA_LIBRARIES}
   ${CALIPER_LIB}
   ${CALIPER_MPI_LIB}
-  ${likwid_LIBRARIES})
+  ${likwid_LIBRARIES}
+  ${MPI_C_LIBRARIES})
 target_include_directories(coreneuron SYSTEM
                            PRIVATE ${CORENEURON_PROJECT_SOURCE_DIR}/external/Random123/include)
 target_include_directories(coreneuron SYSTEM
@@ -169,7 +169,7 @@ add_custom_target(
   nrniv-core ALL
   COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_BINARY_DIR}/bin/nrnivmodl-core.py
           --build-type=STATIC --binary ${CORENRN_MOD2CPP_BINARY}
-          --verbose
+          --verbose -j 1
           ${CORENEURON_PROJECT_SOURCE_DIR}/tests/integration/ring_gap/mod
   WORKING_DIRECTORY
     ${CMAKE_BINARY_DIR}/bin

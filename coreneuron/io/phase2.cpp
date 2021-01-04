@@ -3,7 +3,6 @@
 #include "coreneuron/sim/multicore.hpp"
 #include "coreneuron/io/nrn_checkpoint.hpp"
 #include "coreneuron/utils/nrnoc_aux.hpp"
-#include "coreneuron/network/partrans.hpp"
 #include "coreneuron/permute/cellorder.hpp"
 #include "coreneuron/permute/node_permute.h"
 #include "coreneuron/utils/vrecitem.h"
@@ -996,10 +995,6 @@ void Phase2::populate(NrnThread& nt, const UserParams& userParams) {
         }
     }
 
-    if (nrn_have_gaps) {
-        nrn_partrans::gap_thread_setup(nt);
-    }
-
     pdata_relocation(nt, memb_func);
 
     /* if desired, apply the node permutation. This involves permuting
@@ -1053,10 +1048,6 @@ void Phase2::populate(NrnThread& nt, const UserParams& userParams) {
         }
     }
 
-    if (nrn_have_gaps && interleave_permute_type) {
-        nrn_partrans::gap_indices_permute(nt);
-    }
-
     set_dependencies(nt, memb_func);
 
     fill_before_after_lists(nt, memb_func);
@@ -1082,13 +1073,6 @@ void Phase2::populate(NrnThread& nt, const UserParams& userParams) {
     }
     auto& pnttype2presyn = corenrn.get_pnttype2presyn();
     auto& nrn_has_net_event_ = corenrn.get_has_net_event();
-    // from nrn_has_net_event create pnttype2presyn.
-    if (pnttype2presyn.empty()) {
-        pnttype2presyn.resize(memb_func.size(), -1);
-    }
-    for (size_t i = 0; i < nrn_has_net_event_.size(); ++i) {
-        pnttype2presyn[nrn_has_net_event_[i]] = i;
-    }
     // create the nt.pnt2presyn_ix array of arrays.
     nt.pnt2presyn_ix = (int**)ecalloc(nrn_has_net_event_.size(), sizeof(int*));
     for (size_t i = 0; i < nrn_has_net_event_.size(); ++i) {
