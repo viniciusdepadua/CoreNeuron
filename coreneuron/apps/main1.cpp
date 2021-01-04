@@ -77,10 +77,8 @@ bool corenrn_units_use_legacy() {
 
 void (*nrn2core_part2_clean_)();
 
-#ifdef ISPC_INTEROP
-// cf. utils/ispc_globals.c
+// cf. utils/ispc/globals.cpp
 extern double ispc_celsius;
-#endif
 
 /**
  * If "export OMP_NUM_THREADS=n" is not set then omp by default sets
