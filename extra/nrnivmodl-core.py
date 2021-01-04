@@ -184,7 +184,8 @@ class MakefileGenerator():
 
 if __name__ == '__main__':
     arguments = parse_args()
-    os.makedirs(arguments.work_dir)
+    if not os.path.exists(arguments.work_dir):
+        os.makedirs(arguments.work_dir)
     files = ModFiles(arguments.mod_dir, arguments.work_dir)
     print("Output dir = 'make -f {}'".format(arguments.work_dir))
     G = MakefileGenerator(arguments, files)
