@@ -93,7 +93,7 @@ def parse_args():
 
     parser.add_argument('--gpu', choices=['cuda', 'OpenAcc'], const='OpenAcc', nargs='?')
 
-    parser.add_argument('--work-dir', default=os.path.abspath("./output"))
+    parser.add_argument('--work-dir', default=os.path.abspath("."))
 
     parser.add_argument('--build-type', choices=['STATIC', 'SHARED'])
 
