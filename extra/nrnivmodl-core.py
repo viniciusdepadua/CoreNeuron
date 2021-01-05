@@ -170,7 +170,7 @@ class MakefileGenerator():
             obj_cpp_files.extend(['$(MOD_OBJS_DIR)/' + x['o_file'] for x in ispc_files])
             s += rules['general'].format(obj_ispc_files=' '.join(obj_ispc_files), obj_cpp_files=' '.join(obj_cpp_files), mod_files=' '.join(mod_files))
             for f in ispc_files:
-                s += rules['ispc'].format(**f, work_dir=arguments.work_dir)
+                s += rules['ispc'].format(work_dir=arguments.work_dir, **f)
         else:
             files = self.files.get_files()
             cpp_files = self.files.get_cpp_files_for_rules(files)
@@ -178,7 +178,7 @@ class MakefileGenerator():
             s += rules['general'].format(obj_ispc_files='', obj_cpp_files=' '.join(obj_cpp_files), mod_files=' '.join(mod_files))
 
         for f in cpp_files:
-            s += rules['cpp'].format(**f, work_dir=arguments.work_dir)
+            s += rules['cpp'].format(work_dir=arguments.work_dir, **f)
 
         return s
 
