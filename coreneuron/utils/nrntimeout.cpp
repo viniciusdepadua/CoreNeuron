@@ -40,10 +40,9 @@ setitimer will conflict with profiler. In that case,
 user can disable setitimer which is just safety for
 deadlock situations */
 namespace coreneuron {
-#if ( defined(DISABLE_TIMEOUT) || defined(MINGW) )
+#if (defined(DISABLE_TIMEOUT) || defined(MINGW))
 
-void nrn_timeout(int seconds) {
-}
+void nrn_timeout(int seconds) {}
 
 #else
 
@@ -53,9 +52,9 @@ static struct itimerval value;
 static struct sigaction act, oact;
 
 static void timed_out(int sig) {
-    (void)sig; /* unused */
+    (void) sig; /* unused */
 #if DEBUG
-printf("timed_out told=%g t=%g\n", told, t);
+    printf("timed_out told=%g t=%g\n", told, t);
 #endif
     if (nrn_threads->_t == told) { /* nothing has been accomplished since last signal*/
         printf("nrn_timeout t=%g\n", nrn_threads->_t);
@@ -72,7 +71,7 @@ void nrn_timeout(int seconds) {
         return;
     }
 #if DEBUG
-printf("nrn_timeout %d\n", seconds);
+    printf("nrn_timeout %d\n", seconds);
 #endif
     if (seconds) {
         told = nrn_threads->_t;
@@ -83,13 +82,13 @@ printf("nrn_timeout %d\n", seconds);
             nrn_abort(0);
         }
     } else {
-        sigaction(SIGALRM, &oact, (struct sigaction*)0);
+        sigaction(SIGALRM, &oact, (struct sigaction*) 0);
     }
     value.it_interval.tv_sec = seconds;
     value.it_interval.tv_usec = 0;
     value.it_value.tv_sec = seconds;
     value.it_value.tv_usec = 0;
-    if (setitimer(ITIMER_REAL, &value, (struct itimerval*)0)) {
+    if (setitimer(ITIMER_REAL, &value, (struct itimerval*) 0)) {
         printf("setitimer failed\n");
         nrn_abort(0);
     }
