@@ -19,4 +19,3 @@ jobs:
           shell: bash
           working-directory: ${{runner.workspace}}/CoreNeuron/BUILD
           run: make check-clang-format
-        - uses: mxschmitt/action-tmate@v3
