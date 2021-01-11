@@ -18,7 +18,5 @@ jobs:
         - name: Run clang-format
           shell: bash
           working-directory: ${{runner.workspace}}/CoreNeuron/BUILD
-          run: make VERBOSE=1 check-clang-format
-          env:
-              VERBOSE: 1
+          run: make check-clang-format
         - uses: mxschmitt/action-tmate@v3
