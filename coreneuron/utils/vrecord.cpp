@@ -36,8 +36,10 @@ THE POSSIBILITY OF SUCH DAMAGE.
 namespace coreneuron {
 extern NetCvode* net_cvode_instance;
 
-PlayRecordEvent::PlayRecordEvent() {}
-PlayRecordEvent::~PlayRecordEvent() {}
+PlayRecordEvent::PlayRecordEvent() {
+}
+PlayRecordEvent::~PlayRecordEvent() {
+}
 
 void PlayRecordEvent::deliver(double tt, NetCvode* ns, NrnThread*) {
     plr_->deliver(tt, ns);
@@ -72,12 +74,8 @@ VecPlayContinuous::VecPlayContinuous(double* pd,
                                      IvocVect* discon,
                                      int ith)
     : PlayRecord(pd, ith)
-    , y_(std::move(yvec))
-    , t_(std::move(tvec))
-    , discon_indices_(discon)
-    , last_index_(0)
-    , discon_index_(0)
-    , ubound_index_(0)
+    , y_(std::move(yvec)), t_(std::move(tvec)), discon_indices_(discon)
+    , last_index_(0), discon_index_(0), ubound_index_(0)
     , e_(new PlayRecordEvent{}) {
     e_->plr_ = this;
 }
@@ -92,7 +90,7 @@ void VecPlayContinuous::play_init() {
     discon_index_ = 0;
     if (discon_indices_) {
         if (discon_indices_->size() > 0) {
-            ubound_index_ = (int) (*discon_indices_)[discon_index_++];
+            ubound_index_ = (int)(*discon_indices_)[discon_index_++];
             // printf("play_init %d %g\n", ubound_index_, t_->elem(ubound_index_));
             e_->send(t_[ubound_index_], net_cvode_instance, nt);
         } else {
@@ -108,12 +106,12 @@ void VecPlayContinuous::deliver(double tt, NetCvode* ns) {
     NrnThread* nt = nrn_threads + ith_;
     // printf("deliver %g\n", tt);
     last_index_ = ubound_index_;
-    // clang-format off
+// clang-format off
     #pragma acc update device(last_index_) if (nt->compute_gpu)
     // clang-format on
     if (discon_indices_) {
         if (discon_index_ < discon_indices_->size()) {
-            ubound_index_ = (int) (*discon_indices_)[discon_index_++];
+            ubound_index_ = (int)(*discon_indices_)[discon_index_++];
             // printf("after deliver:send %d %g\n", ubound_index_, t_->elem(ubound_index_));
             e_->send(t_[ubound_index_], ns, nt);
         } else {
@@ -125,7 +123,7 @@ void VecPlayContinuous::deliver(double tt, NetCvode* ns) {
             e_->send(t_[ubound_index_], ns, nt);
         }
     }
-    // clang-format off
+// clang-format off
     #pragma acc update device(ubound_index_) if (nt->compute_gpu)
     // clang-format on
     continuous(tt);
@@ -133,7 +131,7 @@ void VecPlayContinuous::deliver(double tt, NetCvode* ns) {
 
 void VecPlayContinuous::continuous(double tt) {
     NrnThread* nt = nrn_threads + ith_;
-    // clang-format off
+// clang-format off
     #pragma acc kernels present(this) if(nt->compute_gpu)
     {
         *pd_ = interpolate(tt);

@@ -11,8 +11,7 @@ namespace coreneuron {
 
 class ReportHandler {
   public:
-    ReportHandler(ReportConfiguration& config)
-        : m_report_config(config){};
+    ReportHandler(ReportConfiguration& config) : m_report_config(config){};
     virtual ~ReportHandler() = default;
 
     virtual void create_report(double dt, double tstop, double delay);
@@ -46,7 +45,7 @@ class ReportHandler {
   protected:
     ReportConfiguration m_report_config;
 #if defined(ENABLE_BIN_REPORTS) || defined(ENABLE_SONATA_REPORTS)
-    std::vector<std::unique_ptr<ReportEvent>> m_report_events;
+    std::vector<std::unique_ptr<ReportEvent> > m_report_events;
 #endif  // defined(ENABLE_BIN_REPORTS) || defined(ENABLE_SONATA_REPORTS)
 };
 

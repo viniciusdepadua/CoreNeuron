@@ -281,7 +281,7 @@ static void write_phase2(NrnThread& nt, FileHandlerWrap& fh) {
 
     auto& memb_func = corenrn.get_memb_funcs();
     // will need the ml_pinv inverse permutation of ml._permute for ions
-    int** ml_pinv = (int**) ecalloc(memb_func.size(), sizeof(int*));
+    int** ml_pinv = (int**)ecalloc(memb_func.size(), sizeof(int*));
 
     for (NrnThreadMembList* current_tml = nt.tml; current_tml; current_tml = current_tml->next) {
         Memb_list* ml = current_tml->ml;
@@ -351,8 +351,8 @@ static void write_phase2(NrnThread& nt, FileHandlerWrap& fh) {
                             if (elayout == 0) {
                                 if (eml->_permute) {
                                     if (!ml_pinv[etype]) {
-                                        ml_pinv[etype] = inverse_permute(eml->_permute,
-                                                                         eml->nodecount);
+                                        ml_pinv[etype] =
+                                            inverse_permute(eml->_permute, eml->nodecount);
                                     }
                                     ei_instance = ml_pinv[etype][ei_instance];
                                 }
@@ -496,8 +496,8 @@ static void write_phase2(NrnThread& nt, FileHandlerWrap& fh) {
                 }
                 d = ml->data + nrn_i_layout(jp, ml->nodecount, 0, dsz, layout);
                 pd = ml->pdata + nrn_i_layout(jp, ml->nodecount, 0, pdsz, layout);
-                (*corenrn.get_bbcore_write()[type])(
-                    nullptr, nullptr, &dcnt, &icnt, 0, aln_cntml, d, pd, ml->_thread, &nt, 0.0);
+                (*corenrn.get_bbcore_write()[type])(nullptr, nullptr, &dcnt, &icnt, 0, aln_cntml, d, pd,
+                                           ml->_thread, &nt, 0.0);
             }
             fh << icnt << "\n";
             fh << dcnt << "\n";
@@ -525,8 +525,8 @@ static void write_phase2(NrnThread& nt, FileHandlerWrap& fh) {
                 d = ml->data + nrn_i_layout(jp, ml->nodecount, 0, dsz, layout);
                 pd = ml->pdata + nrn_i_layout(jp, ml->nodecount, 0, pdsz, layout);
 
-                (*corenrn.get_bbcore_write()[type])(
-                    dArray, iArray, &dcnt, &icnt, 0, aln_cntml, d, pd, ml->_thread, &nt, 0.0);
+                (*corenrn.get_bbcore_write()[type])(dArray, iArray, &dcnt, &icnt, 0, aln_cntml, d, pd,
+                                           ml->_thread, &nt, 0.0);
             }
 
             if (icnt) {
@@ -544,7 +544,7 @@ static void write_phase2(NrnThread& nt, FileHandlerWrap& fh) {
 
     fh << nt.n_vecplay << " VecPlay instances\n";
     for (int i = 0; i < nt.n_vecplay; i++) {
-        PlayRecord* pr = (PlayRecord*) nt._vecplay[i];
+        PlayRecord* pr = (PlayRecord*)nt._vecplay[i];
         int vtype = pr->type();
         int mtype = -1;
         int ix = -1;
@@ -562,17 +562,12 @@ static void write_phase2(NrnThread& nt, FileHandlerWrap& fh) {
         }
         assert(mtype >= 0);
         int icnt, isz;
-        nrn_inverse_i_layout(ix,
-                             icnt,
-                             ml->nodecount,
-                             isz,
-                             corenrn.get_prop_param_size()[mtype],
+        nrn_inverse_i_layout(ix, icnt, ml->nodecount, isz, corenrn.get_prop_param_size()[mtype],
                              corenrn.get_mech_data_layout()[mtype]);
         if (ml_pinv[mtype]) {
             icnt = ml_pinv[mtype][icnt];
         }
-        ix = nrn_i_layout(
-            icnt, ml->nodecount, isz, corenrn.get_prop_param_size()[mtype], 1 /*AOS_LAYOUT*/);
+        ix = nrn_i_layout(icnt, ml->nodecount, isz, corenrn.get_prop_param_size()[mtype], 1 /*AOS_LAYOUT*/);
 
         fh << vtype << "\n";
         fh << mtype << "\n";
@@ -583,7 +578,7 @@ static void write_phase2(NrnThread& nt, FileHandlerWrap& fh) {
         assert(ntc.vecplay_ix[i] == ix);
 #endif
         if (vtype == VecPlayContinuousType) {
-            VecPlayContinuous* vpc = (VecPlayContinuous*) pr;
+            VecPlayContinuous* vpc = (VecPlayContinuous*)pr;
             int sz = vpc->y_.size();
             fh << sz << "\n";
             fh.write_array<double>(vpc->y_.data(), sz);
@@ -629,7 +624,7 @@ double restore_time(const char* restore_dir) {
 }
 
 static void write_tqueue(TQItem* q, NrnThread& nt, FileHandlerWrap& fh) {
-    DiscreteEvent* d = (DiscreteEvent*) q->data_;
+    DiscreteEvent* d = (DiscreteEvent*)q->data_;
 
     // printf("  p %.20g %d\n", q->t_, d->type());
     // d->pr("", q->t_, net_cvode_instance);
@@ -642,120 +637,118 @@ static void write_tqueue(TQItem* q, NrnThread& nt, FileHandlerWrap& fh) {
     fh.write_array(&q->t_, 1);
 
     switch (d->type()) {
-    case NetConType: {
-        NetCon* nc = (NetCon*) d;
-        assert(nc >= nt.netcons && (nc < (nt.netcons + nt.n_netcon)));
-        fh << (nc - nt.netcons) << "\n";
-        break;
-    }
-    case SelfEventType: {
-        SelfEvent* se = (SelfEvent*) d;
-        fh << int(se->target_->_type) << "\n";
-        fh << se->target_ - nt.pntprocs << "\n";  // index of nrnthread.pntprocs
-        fh << se->target_->_i_instance << "\n";   // not needed except for assert check
-        fh.write_array(&se->flag_, 1);
-        fh << (se->movable_ - nt._vdata) << "\n";  // DANGEROUS?
-        fh << se->weight_index_ << "\n";
-        // printf("    %d %ld %d %g %ld %d\n", se->target_->_type, se->target_ - nt.pntprocs,
-        // se->target_->_i_instance, se->flag_, se->movable_ - nt._vdata, se->weight_index_);
-        break;
-    }
-    case PreSynType: {
-        PreSyn* ps = (PreSyn*) d;
-        assert(ps >= nt.presyns && (ps < (nt.presyns + nt.n_presyn)));
-        fh << (ps - nt.presyns) << "\n";
-        break;
-    }
-    case NetParEventType: {
-        // nothing extra to write
-        break;
-    }
-    case PlayRecordEventType: {
-        PlayRecord* pr = ((PlayRecordEvent*) d)->plr_;
-        fh << pr->type() << "\n";
-        if (pr->type() == VecPlayContinuousType) {
-            VecPlayContinuous* vpc = (VecPlayContinuous*) pr;
-            int ix = -1;
-            for (int i = 0; i < nt.n_vecplay; ++i) {
-                // if too many for fast search, put ix in the instance
-                if (nt._vecplay[i] == (void*) vpc) {
-                    ix = i;
-                    break;
-                }
-            }
-            assert(ix >= 0);
-            fh << ix << "\n";
-        } else {
-            assert(0);
+        case NetConType: {
+            NetCon* nc = (NetCon*)d;
+            assert(nc >= nt.netcons && (nc < (nt.netcons + nt.n_netcon)));
+            fh << (nc - nt.netcons) << "\n";
+            break;
         }
-        break;
-    }
-    default: {
-        // In particular, InputPreSyn does not appear in tqueue as it
-        // immediately fans out to NetCon.
-        assert(0);
-        break;
-    }
+        case SelfEventType: {
+            SelfEvent* se = (SelfEvent*)d;
+            fh << int(se->target_->_type) << "\n";
+            fh << se->target_ - nt.pntprocs << "\n";  // index of nrnthread.pntprocs
+            fh << se->target_->_i_instance << "\n";   // not needed except for assert check
+            fh.write_array(&se->flag_, 1);
+            fh << (se->movable_ - nt._vdata) << "\n";  // DANGEROUS?
+            fh << se->weight_index_ << "\n";
+            // printf("    %d %ld %d %g %ld %d\n", se->target_->_type, se->target_ - nt.pntprocs,
+            // se->target_->_i_instance, se->flag_, se->movable_ - nt._vdata, se->weight_index_);
+            break;
+        }
+        case PreSynType: {
+            PreSyn* ps = (PreSyn*)d;
+            assert(ps >= nt.presyns && (ps < (nt.presyns + nt.n_presyn)));
+            fh << (ps - nt.presyns) << "\n";
+            break;
+        }
+        case NetParEventType: {
+            // nothing extra to write
+            break;
+        }
+        case PlayRecordEventType: {
+            PlayRecord* pr = ((PlayRecordEvent*)d)->plr_;
+            fh << pr->type() << "\n";
+            if (pr->type() == VecPlayContinuousType) {
+                VecPlayContinuous* vpc = (VecPlayContinuous*)pr;
+                int ix = -1;
+                for (int i = 0; i < nt.n_vecplay; ++i) {
+                    // if too many for fast search, put ix in the instance
+                    if (nt._vecplay[i] == (void*)vpc) {
+                        ix = i;
+                        break;
+                    }
+                }
+                assert(ix >= 0);
+                fh << ix << "\n";
+            } else {
+                assert(0);
+            }
+            break;
+        }
+        default: {
+            // In particular, InputPreSyn does not appear in tqueue as it
+            // immediately fans out to NetCon.
+            assert(0);
+            break;
+        }
     }
 }
 
 static int patstim_index;
 static double patstim_te;
 
-static void checkpoint_restore_tqitem(int type,
-                                      std::shared_ptr<Phase2::EventTypeBase> event,
-                                      NrnThread& nt) {
+static void checkpoint_restore_tqitem(int type, std::shared_ptr<Phase2::EventTypeBase> event, NrnThread& nt) {
     // printf("restore tqitem type=%d time=%.20g\n", type, time);
 
     switch (type) {
-    case NetConType: {
-        auto e = static_cast<Phase2::NetConType_*>(event.get());
-        // printf("  NetCon %d\n", netcon_index);
-        NetCon* nc = nt.netcons + e->netcon_index;
-        nc->send(e->time, net_cvode_instance, &nt);
-        break;
-    }
-    case SelfEventType: {
-        auto e = static_cast<Phase2::SelfEventType_*>(event.get());
-        if (e->target_type == patstimtype) {
-            if (nt.id == 0) {
-                patstim_te = e->time;
-            }
+        case NetConType: {
+            auto e = static_cast<Phase2::NetConType_*>(event.get());
+            // printf("  NetCon %d\n", netcon_index);
+            NetCon* nc = nt.netcons + e->netcon_index;
+            nc->send(e->time, net_cvode_instance, &nt);
             break;
         }
-        Point_process* pnt = nt.pntprocs + e->point_proc_instance;
-        // printf("  SelfEvent %d %d %d %g %d %d\n", target_type, point_proc_instance,
-        // target_instance, flag, movable, weight_index);
-        nrn_assert(e->target_instance == pnt->_i_instance);
-        nrn_assert(e->target_type == pnt->_type);
-        net_send(nt._vdata + e->movable, e->weight_index, pnt, e->time, e->flag);
-        break;
-    }
-    case PreSynType: {
-        auto e = static_cast<Phase2::PreSynType_*>(event.get());
-        // printf("  PreSyn %d\n", presyn_index);
-        PreSyn* ps = nt.presyns + e->presyn_index;
-        int gid = ps->output_index_;
-        ps->output_index_ = -1;
-        ps->send(e->time, net_cvode_instance, &nt);
-        ps->output_index_ = gid;
-        break;
-    }
-    case NetParEventType: {
-        // nothing extra to read
-        // printf("  NetParEvent\n");
-        break;
-    }
-    case PlayRecordEventType: {
-        auto e = static_cast<Phase2::PlayRecordEventType_*>(event.get());
-        VecPlayContinuous* vpc = (VecPlayContinuous*) (nt._vecplay[e->vecplay_index]);
-        vpc->e_->send(e->time, net_cvode_instance, &nt);
-        break;
-    }
-    default: {
-        assert(0);
-        break;
-    }
+        case SelfEventType: {
+            auto e = static_cast<Phase2::SelfEventType_*>(event.get());
+            if (e->target_type == patstimtype) {
+                if (nt.id == 0) {
+                    patstim_te = e->time;
+                }
+                break;
+            }
+            Point_process* pnt = nt.pntprocs + e->point_proc_instance;
+            // printf("  SelfEvent %d %d %d %g %d %d\n", target_type, point_proc_instance, target_instance,
+            // flag, movable, weight_index);
+            nrn_assert(e->target_instance == pnt->_i_instance);
+            nrn_assert(e->target_type == pnt->_type);
+            net_send(nt._vdata + e->movable, e->weight_index, pnt, e->time, e->flag);
+            break;
+        }
+        case PreSynType: {
+            auto e = static_cast<Phase2::PreSynType_*>(event.get());
+            // printf("  PreSyn %d\n", presyn_index);
+            PreSyn* ps = nt.presyns + e->presyn_index;
+            int gid = ps->output_index_;
+            ps->output_index_ = -1;
+            ps->send(e->time, net_cvode_instance, &nt);
+            ps->output_index_ = gid;
+            break;
+        }
+        case NetParEventType: {
+            // nothing extra to read
+            // printf("  NetParEvent\n");
+            break;
+        }
+        case PlayRecordEventType: {
+            auto e = static_cast<Phase2::PlayRecordEventType_*>(event.get());
+            VecPlayContinuous* vpc = (VecPlayContinuous*)(nt._vecplay[e->vecplay_index]);
+            vpc->e_->send(e->time, net_cvode_instance, &nt);
+            break;
+        }
+        default: {
+            assert(0);
+            break;
+        }
     }
 }
 
@@ -766,7 +759,7 @@ static void write_tqueue(NrnThread& nt, FileHandlerWrap& fh) {
     // VecPlayContinuous
     fh << nt.n_vecplay << " VecPlayContinuous state\n";
     for (int i = 0; i < nt.n_vecplay; ++i) {
-        VecPlayContinuous* vpc = (VecPlayContinuous*) nt._vecplay[i];
+        VecPlayContinuous* vpc = (VecPlayContinuous*)nt._vecplay[i];
         fh << vpc->last_index_ << "\n";
         fh << vpc->discon_index_ << "\n";
         fh << vpc->ubound_index_ << "\n";
@@ -779,13 +772,7 @@ static void write_tqueue(NrnThread& nt, FileHandlerWrap& fh) {
             Memb_list* ml = tml->ml;
             patstim_index = checkpoint_save_patternstim(
                 /* below correct only for AoS */
-                0,
-                ml->nodecount,
-                ml->data,
-                ml->pdata,
-                ml->_thread,
-                nrn_threads,
-                0.0);
+                0, ml->nodecount, ml->data, ml->pdata, ml->_thread, nrn_threads, 0.0);
             break;
         }
     }
@@ -842,7 +829,7 @@ void checkpoint_restore_tqueue(NrnThread& nt, const Phase2& p2) {
     checkpoint_restored_ = true;
 
     for (int i = 0; i < nt.n_vecplay; ++i) {
-        VecPlayContinuous* vpc = (VecPlayContinuous*) nt._vecplay[i];
+        VecPlayContinuous* vpc = (VecPlayContinuous*)nt._vecplay[i];
         auto& vec = p2.vec_play_continuous[i];
         vpc->last_index_ = vec.last_index;
         vpc->discon_index_ = vec.discon_index;
@@ -895,16 +882,10 @@ bool checkpoint_initialize() {
     for (NrnThreadMembList* tml = nrn_threads[0].tml; tml; tml = tml->next) {
         if (tml->index == patstimtype && patstim_index >= 0 && patstim_te > 0.0) {
             Memb_list* ml = tml->ml;
-            checkpoint_restore_patternstim(patstim_index,
-                                           patstim_te,
+            checkpoint_restore_patternstim(patstim_index, patstim_te,
                                            /* below correct only for AoS */
-                                           0,
-                                           ml->nodecount,
-                                           ml->data,
-                                           ml->pdata,
-                                           ml->_thread,
-                                           nrn_threads,
-                                           0.0);
+                                           0, ml->nodecount, ml->data, ml->pdata, ml->_thread,
+                                           nrn_threads, 0.0);
             break;
         }
     }
