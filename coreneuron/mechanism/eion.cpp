@@ -304,17 +304,19 @@ void nrn_cur_ion(NrnThread* nt, Memb_list* ml, int type) {
     int stream_id = nt->stream_id;
 #endif
 /*printf("ion_cur %s\n", memb_func[type].sym->name);*/
-#if LAYOUT == 1 /*AoS*/
+// AoS
+#if LAYOUT == 1
     for (_iml = 0; _iml < _cntml_actual; ++_iml) {
         pd = ml->data + _iml * nparm;
         ppd = ml->pdata + _iml * 1;
-#elif LAYOUT == 0 /*SoA*/
+// SoA
+#elif LAYOUT == 0
     int _cntml_padded = ml->_nodecount_padded;
     pd = ml->data;
     ppd = ml->pdata;
     _PRAGMA_FOR_CUR_ACC_LOOP_
     for (_iml = 0; _iml < _cntml_actual; ++_iml) {
-#else /* if LAYOUT > 1 */ /*AoSoA*/
+#else
 #error AoSoA not implemented.
 #endif
         dcurdv = 0.;
@@ -341,17 +343,19 @@ void nrn_init_ion(NrnThread* nt, Memb_list* ml, int type) {
     }
 
 /*printf("ion_init %s\n", memb_func[type].sym->name);*/
-#if LAYOUT == 1 /*AoS*/
+// AoS
+#if LAYOUT == 1
     for (_iml = 0; _iml < _cntml_actual; ++_iml) {
         pd = ml->data + _iml * nparm;
         ppd = ml->pdata + _iml * 1;
-#elif LAYOUT == 0 /*SoA*/
+// SoA
+#elif LAYOUT == 0
     int _cntml_padded = ml->_nodecount_padded;
     pd = ml->data;
     ppd = ml->pdata;
     _PRAGMA_FOR_INIT_ACC_LOOP_
     for (_iml = 0; _iml < _cntml_actual; ++_iml) {
-#else /* if LAYOUT > 1 */ /*AoSoA*/
+#else
 #error AoSoA not implemented.
 #endif
         if (iontype & 04) {
@@ -389,15 +393,17 @@ void second_order_cur(NrnThread* _nt, int secondorder) {
                 ml = tml->ml;
                 _cntml_actual = ml->nodecount;
                 ni = ml->nodeindices;
-#if LAYOUT == 1 /*AoS*/
+// AoS
+#if LAYOUT == 1
                 for (_iml = 0; _iml < _cntml_actual; ++_iml) {
                     pd = ml->data + _iml * nparm;
-#elif LAYOUT == 0 /*SoA*/
+// SoA
+#elif LAYOUT == 0
                 _cntml_padded = ml->_nodecount_padded;
                 pd = ml->data;
                 _PRAGMA_FOR_SEC_ORDER_CUR_ACC_LOOP_
                 for (_iml = 0; _iml < _cntml_actual; ++_iml) {
-#else /* if LAYOUT > 1 */ /*AoSoA*/
+#else
 #error AoSoA not implemented.
 #endif
                     cur += dcurdv * (_vec_rhs[ni[_iml]]);
