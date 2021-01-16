@@ -1,0 +1,14 @@
+cmake-build-debug*
+*build*
+spconfig.*
+*~
+.DS_Store
+*.swp
+.idea
+*.srctrl*
+
+# HPC coding conventions
+.clang-format
+.clang-tidy
+.cmake-format.yaml
+.pre-commit-config.yaml
