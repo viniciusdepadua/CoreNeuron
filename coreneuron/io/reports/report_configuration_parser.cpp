@@ -80,45 +80,45 @@ std::vector<ReportConfiguration> create_report_configurations(const std::string&
                 report.type = IMembraneReport;
             } else {
                 switch (static_cast<TargetType>(target_type)) {
-                case TargetType::Soma:
-                    report.type = SomaReport;
-                    break;
-                case TargetType::Compartment:
-                    report.type = CompartmentReport;
-                    break;
-                case TargetType::Axon:
-                    report.type = SectionReport;
-                    report.section_type = Axon;
-                    report.section_all_compartments = false;
-                    break;
-                case TargetType::AxonComp:
-                    report.type = SectionReport;
-                    report.section_type = Axon;
-                    report.section_all_compartments = true;
-                    break;
-                case TargetType::Dendrite:
-                    report.type = SectionReport;
-                    report.section_type = Dendrite;
-                    report.section_all_compartments = false;
-                    break;
-                case TargetType::DendriteComp:
-                    report.type = SectionReport;
-                    report.section_type = Dendrite;
-                    report.section_all_compartments = true;
-                    break;
-                case TargetType::Apical:
-                    report.type = SectionReport;
-                    report.section_type = Apical;
-                    report.section_all_compartments = false;
-                    break;
-                case TargetType::ApicalComp:
-                    report.type = SectionReport;
-                    report.section_type = Apical;
-                    report.section_all_compartments = true;
-                    break;
-                default:
-                    std::cerr << "Report error: unsupported target type" << std::endl;
-                    nrn_abort(1);
+                    case TargetType::Soma:
+                        report.type = SomaReport;
+                        break;
+                    case TargetType::Compartment:
+                        report.type = CompartmentReport;
+                        break;
+                    case TargetType::Axon:
+                        report.type = SectionReport;
+                        report.section_type = Axon;
+                        report.section_all_compartments = false;
+                        break;
+                    case TargetType::AxonComp:
+                        report.type = SectionReport;
+                        report.section_type = Axon;
+                        report.section_all_compartments = true;
+                        break;
+                    case TargetType::Dendrite:
+                        report.type = SectionReport;
+                        report.section_type = Dendrite;
+                        report.section_all_compartments = false;
+                        break;
+                    case TargetType::DendriteComp:
+                        report.type = SectionReport;
+                        report.section_type = Dendrite;
+                        report.section_all_compartments = true;
+                        break;
+                    case TargetType::Apical:
+                        report.type = SectionReport;
+                        report.section_type = Apical;
+                        report.section_all_compartments = false;
+                        break;
+                    case TargetType::ApicalComp:
+                        report.type = SectionReport;
+                        report.section_type = Apical;
+                        report.section_all_compartments = true;
+                        break;
+                    default:
+                        std::cerr << "Report error: unsupported target type" << std::endl;
+                        nrn_abort(1);
                 }
             }
         } else if (report.type_str == "synapse") {

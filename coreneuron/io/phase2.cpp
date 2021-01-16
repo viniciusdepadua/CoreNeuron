@@ -509,54 +509,54 @@ void Phase2::restore_events(FileHandler& F) {
         double time;
         F.read_array(&time, 1);
         switch (type) {
-        case NetConType: {
-            auto event = std::make_shared<NetConType_>();
-            event->time = time;
-            event->netcon_index = F.read_int();
-            events.emplace_back(type, event);
-            break;
-        }
-        case SelfEventType: {
-            auto event = std::make_shared<SelfEventType_>();
-            event->time = time;
-            event->target_type = F.read_int();
-            event->point_proc_instance = F.read_int();
-            event->target_instance = F.read_int();
-            F.read_array(&event->flag, 1);
-            event->movable = F.read_int();
-            event->weight_index = F.read_int();
-            events.emplace_back(type, event);
-            break;
-        }
-        case PreSynType: {
-            auto event = std::make_shared<PreSynType_>();
-            event->time = time;
-            event->presyn_index = F.read_int();
-            events.emplace_back(type, event);
-            break;
-        }
-        case NetParEventType: {
-            auto event = std::make_shared<NetParEvent_>();
-            event->time = time;
-            events.emplace_back(type, event);
-            break;
-        }
-        case PlayRecordEventType: {
-            auto event = std::make_shared<PlayRecordEventType_>();
-            event->time = time;
-            event->play_record_type = F.read_int();
-            if (event->play_record_type == VecPlayContinuousType) {
-                event->vecplay_index = F.read_int();
+            case NetConType: {
+                auto event = std::make_shared<NetConType_>();
+                event->time = time;
+                event->netcon_index = F.read_int();
                 events.emplace_back(type, event);
-            } else {
-                nrn_assert(0);
+                break;
             }
-            break;
-        }
-        default: {
-            nrn_assert(0);
-            break;
-        }
+            case SelfEventType: {
+                auto event = std::make_shared<SelfEventType_>();
+                event->time = time;
+                event->target_type = F.read_int();
+                event->point_proc_instance = F.read_int();
+                event->target_instance = F.read_int();
+                F.read_array(&event->flag, 1);
+                event->movable = F.read_int();
+                event->weight_index = F.read_int();
+                events.emplace_back(type, event);
+                break;
+            }
+            case PreSynType: {
+                auto event = std::make_shared<PreSynType_>();
+                event->time = time;
+                event->presyn_index = F.read_int();
+                events.emplace_back(type, event);
+                break;
+            }
+            case NetParEventType: {
+                auto event = std::make_shared<NetParEvent_>();
+                event->time = time;
+                events.emplace_back(type, event);
+                break;
+            }
+            case PlayRecordEventType: {
+                auto event = std::make_shared<PlayRecordEventType_>();
+                event->time = time;
+                event->play_record_type = F.read_int();
+                if (event->play_record_type == VecPlayContinuousType) {
+                    event->vecplay_index = F.read_int();
+                    events.emplace_back(type, event);
+                } else {
+                    nrn_assert(0);
+                }
+                break;
+            }
+            default: {
+                nrn_assert(0);
+                break;
+            }
         }
     }
 }
@@ -612,35 +612,35 @@ void Phase2::pdata_relocation(const NrnThread& nt, const std::vector<Memb_func>&
             for (int i = 0; i < szdp; ++i) {
                 int s = semantics[i];
                 switch (s) {
-                case -1:  // area
-                    transform_int_data(
-                        nt._actual_area - nt._data, cnt, pdata, i, szdp, layout, nt.end);
-                    break;
-                case -9:  // diam
-                    transform_int_data(
-                        nt._actual_diam - nt._data, cnt, pdata, i, szdp, layout, nt.end);
-                    break;
-                case -5:  // pointer assumes a pointer to membrane voltage
-                    transform_int_data(
-                        nt._actual_v - nt._data, cnt, pdata, i, szdp, layout, nt.end);
-                    break;
-                default:
-                    if (s >= 0 && s < 1000) {  // ion
-                        int etype = s;
-                        /* if ion is SoA, must recalculate pdata values */
-                        /* if ion is AoS, have to deal with offset */
-                        Memb_list* eml = nt._ml_list[etype];
-                        int edata0 = eml->data - nt._data;
-                        int ecnt = eml->nodecount;
-                        int esz = corenrn.get_prop_param_size()[etype];
-                        for (int iml = 0; iml < cnt; ++iml) {
-                            int* pd = pdata + nrn_i_layout(iml, cnt, i, szdp, layout);
-                            int ix = *pd;  // relative to the ion data
-                            nrn_assert((ix >= 0) && (ix < ecnt * esz));
-                            /* Original pd order assumed ecnt groups of esz */
-                            *pd = edata0 + nrn_param_layout(ix, etype, eml);
+                    case -1:  // area
+                        transform_int_data(
+                            nt._actual_area - nt._data, cnt, pdata, i, szdp, layout, nt.end);
+                        break;
+                    case -9:  // diam
+                        transform_int_data(
+                            nt._actual_diam - nt._data, cnt, pdata, i, szdp, layout, nt.end);
+                        break;
+                    case -5:  // pointer assumes a pointer to membrane voltage
+                        transform_int_data(
+                            nt._actual_v - nt._data, cnt, pdata, i, szdp, layout, nt.end);
+                        break;
+                    default:
+                        if (s >= 0 && s < 1000) {  // ion
+                            int etype = s;
+                            /* if ion is SoA, must recalculate pdata values */
+                            /* if ion is AoS, have to deal with offset */
+                            Memb_list* eml = nt._ml_list[etype];
+                            int edata0 = eml->data - nt._data;
+                            int ecnt = eml->nodecount;
+                            int esz = corenrn.get_prop_param_size()[etype];
+                            for (int iml = 0; iml < cnt; ++iml) {
+                                int* pd = pdata + nrn_i_layout(iml, cnt, i, szdp, layout);
+                                int ix = *pd;  // relative to the ion data
+                                nrn_assert((ix >= 0) && (ix < ecnt * esz));
+                                /* Original pd order assumed ecnt groups of esz */
+                                *pd = edata0 + nrn_param_layout(ix, etype, eml);
+                            }
                         }
-                    }
                 }
             }
         }

@@ -33,32 +33,33 @@ void ReportHandler::create_report(double dt, double tstop, double delay) {
         const std::vector<int>& nodes_to_gid = map_gids(nt);
         VarsToReport vars_to_report;
         switch (m_report_config.type) {
-        case SomaReport:
-            vars_to_report = get_soma_vars_to_report(nt, m_report_config.target, nt._actual_v);
-            register_soma_report(nt, m_report_config, vars_to_report);
-            break;
-        case CompartmentReport:
-            vars_to_report =
-                get_compartment_vars_to_report(nt, m_report_config.target, nt._actual_v);
-            register_compartment_report(nt, m_report_config, vars_to_report);
-            break;
-        case IMembraneReport:
-            vars_to_report = get_compartment_vars_to_report(nt,
-                                                            m_report_config.target,
-                                                            nt.nrn_fast_imem->nrn_sav_rhs);
-            register_compartment_report(nt, m_report_config, vars_to_report);
-            break;
-        case SectionReport:
-            vars_to_report = get_section_vars_to_report(nt,
-                                                        m_report_config.target,
-                                                        nt._actual_v,
-                                                        m_report_config.section_type,
-                                                        m_report_config.section_all_compartments);
-            register_compartment_report(nt, m_report_config, vars_to_report);
-            break;
-        default:
-            vars_to_report = get_custom_vars_to_report(nt, m_report_config, nodes_to_gid);
-            register_custom_report(nt, m_report_config, vars_to_report);
+            case SomaReport:
+                vars_to_report = get_soma_vars_to_report(nt, m_report_config.target, nt._actual_v);
+                register_soma_report(nt, m_report_config, vars_to_report);
+                break;
+            case CompartmentReport:
+                vars_to_report =
+                    get_compartment_vars_to_report(nt, m_report_config.target, nt._actual_v);
+                register_compartment_report(nt, m_report_config, vars_to_report);
+                break;
+            case IMembraneReport:
+                vars_to_report = get_compartment_vars_to_report(nt,
+                                                                m_report_config.target,
+                                                                nt.nrn_fast_imem->nrn_sav_rhs);
+                register_compartment_report(nt, m_report_config, vars_to_report);
+                break;
+            case SectionReport:
+                vars_to_report =
+                    get_section_vars_to_report(nt,
+                                               m_report_config.target,
+                                               nt._actual_v,
+                                               m_report_config.section_type,
+                                               m_report_config.section_all_compartments);
+                register_compartment_report(nt, m_report_config, vars_to_report);
+                break;
+            default:
+                vars_to_report = get_custom_vars_to_report(nt, m_report_config, nodes_to_gid);
+                register_custom_report(nt, m_report_config, vars_to_report);
         }
         if (!vars_to_report.empty()) {
             auto report_event = std::make_unique<ReportEvent>(dt,
@@ -183,15 +184,15 @@ VarsToReport ReportHandler::get_compartment_vars_to_report(const NrnThread& nt,
 
 std::string getSectionTypeStr(SectionType type) {
     switch (type) {
-    case Axon:
-        return "axon";
-    case Dendrite:
-        return "dend";
-    case Apical:
-        return "apic";
-    default:
-        std::cerr << "SectionType not handled in getSectionTypeStr" << std::endl;
-        nrn_abort(1);
+        case Axon:
+            return "axon";
+        case Dendrite:
+            return "dend";
+        case Apical:
+            return "apic";
+        default:
+            std::cerr << "SectionType not handled in getSectionTypeStr" << std::endl;
+            nrn_abort(1);
     }
 }
 
