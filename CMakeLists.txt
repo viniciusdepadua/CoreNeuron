@@ -44,7 +44,6 @@ list(APPEND CMAKE_MODULE_PATH ${CORENEURON_PROJECT_SOURCE_DIR}/CMake
 # HPC Coding Conventions
 # =============================================================================
 set(CODING_CONV_PREFIX "CORENRN")
-# Disable sort-includes for now, because headers are not clean
 set(CORENRN_ClangFormat_EXCLUDES_RE
     ".*/external/.*$$"
     CACHE STRING "list of regular expressions to exclude C/C++ files from formatting" FORCE)
