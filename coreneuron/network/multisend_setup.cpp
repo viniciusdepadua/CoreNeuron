@@ -75,14 +75,14 @@ static void alltoalldebug(const char* p,
 }
 #else
 template <typename T>
-static void celldebug(const char*, T&) { }
+static void celldebug(const char*, T&) {}
 static void alltoalldebug(const char*,
                           const std::vector<int>&,
                           const std::vector<int>&,
                           const std::vector<int>&,
                           const std::vector<int>&,
                           const std::vector<int>&,
-                          const std::vector<int>&) { }
+                          const std::vector<int>&) {}
 #endif
 
 #if DEBUG
@@ -195,7 +195,7 @@ TarList::TarList()
     : size(0)
     , list(nullptr)
     , rank(-1)
-    , indices(nullptr) { }
+    , indices(nullptr) {}
 
 TarList::~TarList() {
     delete[] list;

@@ -24,7 +24,7 @@ struct VarWithMapping {
     double* var_value;
     VarWithMapping(int id_, double* v_)
         : id(id_)
-        , var_value(v_) { }
+        , var_value(v_) {}
 };
 
 // mapping the set of variables pointers to report to its gid

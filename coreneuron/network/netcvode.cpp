@@ -343,8 +343,8 @@ void NetCvode::deliver_events(double til, NrnThread* nt) {
         ;
 }
 
-DiscreteEvent::DiscreteEvent() { }
-DiscreteEvent::~DiscreteEvent() { }
+DiscreteEvent::DiscreteEvent() {}
+DiscreteEvent::~DiscreteEvent() {}
 
 NetCon::NetCon() {
     active_ = false;
@@ -353,7 +353,7 @@ NetCon::NetCon() {
     delay_ = 1.0;
 }
 
-NetCon::~NetCon() { }
+NetCon::~NetCon() {}
 
 PreSyn::PreSyn() {
     nc_index_ = 0;
@@ -387,7 +387,7 @@ PreSyn::~PreSyn() {
     }
 }
 
-InputPreSyn::~InputPreSyn() { }
+InputPreSyn::~InputPreSyn() {}
 
 void PreSyn::record(double tt) {
     spikevec_lock();
@@ -410,8 +410,8 @@ bool ConditionEvent::check(NrnThread* nt) {
     return false;
 }
 
-ConditionEvent::ConditionEvent() { }
-ConditionEvent::~ConditionEvent() { }
+ConditionEvent::ConditionEvent() {}
+ConditionEvent::~ConditionEvent() {}
 
 void DiscreteEvent::send(double tt, NetCvode* ns, NrnThread* nt) {
     ns->event(tt, this, nt);
@@ -519,8 +519,8 @@ void InputPreSyn::deliver(double, NetCvode*, NrnThread*) {
     assert(0);  // no InputPreSyn delay.
 }
 
-SelfEvent::SelfEvent() { }
-SelfEvent::~SelfEvent() { }
+SelfEvent::SelfEvent() {}
+SelfEvent::~SelfEvent() {}
 
 void SelfEvent::deliver(double tt, NetCvode* ns, NrnThread* nt) {
     nrn_assert(nt == PP2NT(target_));

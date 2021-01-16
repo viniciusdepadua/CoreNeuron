@@ -46,7 +46,7 @@ static MUTDEC void nrnran123_mutconstruct() {
     }
 }
 #else
-void nrnran123_mutconstruct() { }
+void nrnran123_mutconstruct() {}
 #endif
 
 nrnran123_State* nrnran123_newstream(uint32_t id1, uint32_t id2) {

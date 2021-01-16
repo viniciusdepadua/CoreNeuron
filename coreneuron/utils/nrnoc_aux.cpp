@@ -78,7 +78,7 @@ void* emalloc(size_t size) {
 void* hoc_Emalloc(size_t size) {
     return emalloc(size);
 }
-void hoc_malchk(void) { }
+void hoc_malchk(void) {}
 
 void* ecalloc(size_t n, size_t size) {
     if (n == 0) {

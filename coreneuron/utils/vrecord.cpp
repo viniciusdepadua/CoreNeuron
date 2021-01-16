@@ -16,8 +16,8 @@
 namespace coreneuron {
 extern NetCvode* net_cvode_instance;
 
-PlayRecordEvent::PlayRecordEvent() { }
-PlayRecordEvent::~PlayRecordEvent() { }
+PlayRecordEvent::PlayRecordEvent() {}
+PlayRecordEvent::~PlayRecordEvent() {}
 
 void PlayRecordEvent::deliver(double tt, NetCvode* ns, NrnThread*) {
     plr_->deliver(tt, ns);

@@ -347,7 +347,7 @@ int point_register_mech(const char** m,
     return point_reg_helper(s);
 }
 
-void _modl_cleanup() { }
+void _modl_cleanup() {}
 
 int state_discon_allowed_;
 int state_discon_flag_ = 0;

@@ -97,7 +97,7 @@ static void alloc_mpi_space() {
 NetParEvent::NetParEvent()
     : ithread_(-1)
     , wx_(0.)
-    , ws_(0.) { }
+    , ws_(0.) {}
 
 void NetParEvent::send(double tt, NetCvode* nc, NrnThread* nt) {
     nc->event(tt + usable_mindelay_, this, nt);

@@ -28,7 +28,7 @@ using VVTN = vector<VTN>;    // group of levels
 using VVVTN = vector<VVTN>;  // groups
 
 // verify level in groups of nident identical nodes
-void chklevel(VTN& level, size_t nident = 8) { }
+void chklevel(VTN& level, size_t nident = 8) {}
 
 // first child before second child, etc
 // if same parent level, then parent order

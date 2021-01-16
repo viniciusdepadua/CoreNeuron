@@ -22,7 +22,7 @@ deadlock situations */
 namespace coreneuron {
 #if (defined(DISABLE_TIMEOUT) || defined(MINGW))
 
-void nrn_timeout(int seconds) { }
+void nrn_timeout(int seconds) {}
 
 #else
 

@@ -21,7 +21,7 @@ namespace coreneuron {
 class BinaryReportHandler: public ReportHandler {
   public:
     BinaryReportHandler(ReportConfiguration& config)
-        : ReportHandler(config) { }
+        : ReportHandler(config) {}
 
     void create_report(double dt, double tstop, double delay) override;
 #ifdef ENABLE_BIN_REPORTS

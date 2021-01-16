@@ -55,7 +55,7 @@ TNode::TNode(int ix) {
     children.reserve(2);
 }
 
-TNode::~TNode() { }
+TNode::~TNode() {}
 
 size_t TNode::mkhash() {  // call on all nodes in leaf to root order
     // concept from http://stackoverflow.com/questions/20511347/a-good-hash-function-for-a-vector
