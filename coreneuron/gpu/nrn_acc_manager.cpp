@@ -767,7 +767,10 @@ void update_voltage_from_gpu(NrnThread* nt) {
     if (nt->compute_gpu && nt->end > 0) {
         double* voltage = nt->_actual_v;
         int num_voltage = nrn_soa_padded_size(nt->end, 0);
-#pragma acc update host(voltage [0:num_voltage])
+        // clang-format off
+
+        #pragma acc update host(voltage [0:num_voltage])
+        // clang-format on
     }
 }
 
@@ -784,7 +787,10 @@ void update_weights_from_gpu(NrnThread* threads, int nthreads) {
         size_t n_weight = nt->n_weight;
         if (nt->compute_gpu && n_weight > 0) {
             double* weights = nt->weights;
-#pragma acc update host(weights [0:n_weight])
+            // clang-format off
+
+            #pragma acc update host(weights [0:n_weight])
+            // clang-format on
         }
     }
 }
