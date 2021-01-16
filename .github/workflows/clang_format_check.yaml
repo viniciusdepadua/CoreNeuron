@@ -5,16 +5,18 @@ on:
 jobs:
   build:
     name: clang-format-check
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     steps:
         - name: Fetch repository
           uses: actions/checkout@v1
+        - name: Install clang-format 11
+          run:  sudo apt-get install clang-format-11
         - name: Configure
           shell: bash
           working-directory: ${{runner.workspace}}/CoreNeuron
           run: |
               mkdir BUILD && cd BUILD
-              cmake -DCORENRN_CLANG_FORMAT=ON -DCORENRN_ENABLE_MPI=OFF -DCORENRN_ENABLE_OPENMP=OFF ..
+              cmake -DCORENRN_CLANG_FORMAT=ON -DCORENRN_ENABLE_MPI=OFF -DCORENRN_ENABLE_OPENMP=OFF -DClangFormat_EXECUTABLE=$(which clang-format-11) ..
         - name: Run clang-format
           shell: bash
           working-directory: ${{runner.workspace}}/CoreNeuron/BUILD
