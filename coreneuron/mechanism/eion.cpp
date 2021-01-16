@@ -26,26 +26,25 @@
 #define _STRIDE _cntml_padded + _iml
 #endif
 
+// clang-format off
+
 #if defined(_OPENACC)
 #define _PRAGMA_FOR_INIT_ACC_LOOP_                                                      \
     _Pragma(                                                                            \
-        "acc parallel loop present(pd[0:_cntml_padded*5], ppd[0:1], "                   \
-        "nrn_ion_global_map[0:nrn_ion_global_map_size][0:ion_global_map_member_size]) " \
-        "if(nt->compute_gpu)")
+        "acc parallel loop present(pd[0:_cntml_padded*5], ppd[0:1], nrn_ion_global_map[0:nrn_ion_global_map_size][0:ion_global_map_member_size]) if(nt->compute_gpu)")
 #define _PRAGMA_FOR_CUR_ACC_LOOP_                                                       \
     _Pragma(                                                                            \
-        "acc parallel loop present(pd[0:_cntml_padded*5], "                             \
-        "nrn_ion_global_map[0:nrn_ion_global_map_size][0:ion_global_map_member_size]) " \
-        "if(nt->compute_gpu) async(stream_id)")
+        "acc parallel loop present(pd[0:_cntml_padded*5], nrn_ion_global_map[0:nrn_ion_global_map_size][0:ion_global_map_member_size]) if(nt->compute_gpu) async(stream_id)")
 #define _PRAGMA_FOR_SEC_ORDER_CUR_ACC_LOOP_                                      \
     _Pragma(                                                                     \
-        "acc parallel loop present(pd[0:_cntml_padded*5], ni[0:_cntml_actual], " \
-        "_vec_rhs[0:_nt->end]) if(_nt->compute_gpu) async(stream_id)")
+        "acc parallel loop present(pd[0:_cntml_padded*5], ni[0:_cntml_actual], _vec_rhs[0:_nt->end]) if(_nt->compute_gpu) async(stream_id)")
 #else
 #define _PRAGMA_FOR_INIT_ACC_LOOP_          _Pragma("")
 #define _PRAGMA_FOR_CUR_ACC_LOOP_           _Pragma("")
 #define _PRAGMA_FOR_SEC_ORDER_CUR_ACC_LOOP_ _Pragma("")
 #endif
+
+// clang-format on
 
 namespace coreneuron {
 
