@@ -2,6 +2,7 @@
 
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:@CMAKE_BINARY_DIR@/lib
 export OMP_NUM_THREADS=1
+export LIBSONATA_ZERO_BASED_GIDS=true
 
 # Run the executable
 #SRUN_EXTRA="--propagate=CORE"
@@ -25,11 +26,11 @@ fi
 cd @CMAKE_CURRENT_BINARY_DIR@/@SIM_NAME@
 
 # We convert spikes to out.dat format
-reports=@ENABLE_SONATA_REPORTS@
+reports=@ENABLE_SONATA_REPORTS_TESTS@
 if [ "$reports" = "ON" ]
 then
-  data=$(@H5DUMP_EXECUTABLE@ -d /spikes/timestamps -d /spikes/node_ids -y -O spikes | tr "," "\n")
-  echo $data | awk '{n=NF/2; for (i=1;i<=n;i++) print $i "\t" $(n+i) }' >> out_SONATA.dat
+  data=$(@H5DUMP_EXECUTABLE@ -d /spikes/All/timestamps -d /spikes/All/node_ids -y -O spikes | sed 's/"ms"//g;s/,/\n/g')
+  echo $data | awk '{n=NF/2; for (i=1;i<=n;i++) print $i "\t" $(n+i) }' > out_SONATA.dat
 
   if [ ! -f out_SONATA.dat ]
   then
