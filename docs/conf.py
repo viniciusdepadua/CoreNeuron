@@ -70,3 +70,8 @@ html_css_files = [
 ]
 
 nbsphinx_allow_errors = True
+
+import os
+if os.environ.get("READTHEDOCS"):
+    os.system("rm -rf BUILD && mkdir BUILD && cd BUILD && cmake -DCORENRN_ENABLE_MPI=OFF ../.. && make doxygen")
+    html_extra_path = ['BUILD/docs']
