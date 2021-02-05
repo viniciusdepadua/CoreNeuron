@@ -8,6 +8,7 @@
 #include <vector>
 
 #include <mpi.h>
+#include <boost/math/constants/constants.hpp>
 
 namespace coreneuron {
 
@@ -98,7 +99,7 @@ namespace coreneuron {
         F delta(mu * mu - (de2 - radius * radius) / dx2);
         F one_m_mu(1.0 - mu);
         auto log_integral = [&q2, &dxn](F a, F b) {
-		if (std::abs(q2) < 1.0e-20) {
+		if (std::abs(q2) < std::numeric_limits<F>::epsilon()) {
 		    if (a * b <= 0) {
 		       throw std::invalid_argument(
 				"Log integral: invalid arguments " + std::to_string(b) + " " + std::to_string(a) +
@@ -176,16 +177,13 @@ namespace coreneuron {
             if (seg_start.size() != radius.size()) {
                 throw std::logic_error("Wrong number of radius size.");
             }
-            double f(1.0 / (extra_cellular_conductivity * 4.0 * 3.141592653589));
+            double f(1.0 / (extra_cellular_conductivity * 4.0 * boost::math::constants::pi<double>()));
 
             m.resize(electrodes.size());
             for (size_t k = 0; k < electrodes.size(); ++k) {
                 auto& ms = m[k];
                 ms.resize(seg_start.size());
                 for (size_t l = 0; l < seg_start.size(); l++) {
-                    /*std::cout << "Seg_start[" << l << "] = " << seg_start[l][0] << ", " << seg_start[l][1] << ", " << seg_start[l][2] << std::endl;
-                    std::cout << "seg_end[" << l << "] = " << seg_end[l][0] << ", " << seg_end[l][1] << ", " << seg_end[l][2] << std::endl;
-                    std::cout << "radius[" << l << "] = " << radius[l] << std::endl;*/
                     ms[l] = getFactor(
                             electrodes[k],
                             seg_start[l],
