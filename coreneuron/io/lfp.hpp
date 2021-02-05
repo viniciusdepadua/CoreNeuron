@@ -1,5 +1,5 @@
-#ifndef AREA_LFP_H
-#define AREA_LFP_H
+#ifndef LFP_H
+#define LFP_H
 
 #include <cassert>
 #include <cmath>
@@ -212,6 +212,9 @@ namespace coreneuron {
                                     MPI_SUM,
                                     comm_
             );
+            if (err != MPI_SUCCESS) {
+                MPI_Abort(comm_, err);
+            }
             lfp_values = res_reduced;
         }
 
