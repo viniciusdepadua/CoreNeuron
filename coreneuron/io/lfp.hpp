@@ -172,10 +172,10 @@ namespace coreneuron {
 			, segment_ids_(segment_ids)
         {
             if (seg_start.size() != seg_end.size()) {
-                throw std::logic_error("Wrong number of segment starts or ends.");
+                throw std::invalid_argument("Different number of segment starts and ends.");
             }
             if (seg_start.size() != radius.size()) {
-                throw std::logic_error("Wrong number of radius size.");
+                throw std::invalid_argument("Different number of segments and radii.");
             }
             double f(1.0 / (extra_cellular_conductivity * 4.0 * boost::math::constants::pi<double>()));
 
