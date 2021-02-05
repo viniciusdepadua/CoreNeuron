@@ -1,7 +1,6 @@
 #ifndef LFP_H
 #define LFP_H
 
-#include <cassert>
 #include <cmath>
 #include <array>
 #include <iostream>
@@ -9,6 +8,8 @@
 
 #include <mpi.h>
 #include <boost/math/constants/constants.hpp>
+
+#include "coreneuron/utils/nrn_assert.h"
 
 namespace coreneuron {
 
