@@ -30,7 +30,7 @@ std::array<double, 3> operator+(const std::array<double, 3> &x,
 
 BOOST_AUTO_TEST_CASE(LFP_PointSource_LineSource) {
   using namespace coreneuron;
-#ifdef NRNMPI
+#if NRNMPI
   nrnmpi_init(nullptr, nullptr);
 #endif
   double segment_length{ 1.0e-6 };
