@@ -183,9 +183,13 @@ struct LFPCalculator {
       }
     }
     std::vector<double> res_reduced(res.size());
+#if NRNMPI
     int mpi_sum{ 1 };
     nrnmpi_dbl_allreduce_vec(res.data(), res_reduced.data(), res.size(),
                              mpi_sum);
+#else 
+    res_reduced = res;
+#endif
     lfp_values = res_reduced;
   }
 
