@@ -2,11 +2,12 @@
 #define BOOST_TEST_MAIN
 
 #include <iostream>
-#include <mpi.h>
 
 #include <boost/test/unit_test.hpp>
 #include <boost/test/test_case_template.hpp>
+
 #include "coreneuron/io/lfp.hpp"
+#include "coreneuron/mpi/nrnmpi.h"
 
 template <typename F>
 double integral(F f, double a, double b, int n) {
@@ -27,8 +28,8 @@ std::array<double,3> operator + (const std::array<double,3>& x, const std::array
 }
 
 BOOST_AUTO_TEST_CASE(LFP_PointSource_LineSource) {
-    MPI_Init(nullptr, nullptr);
     using namespace coreneuron;
+    nrnmpi_init(nullptr, nullptr);
     double segment_length{1.0e-6};
     double segment_start_val{1.0e-6};
     std::array<double, 3> segment_start = std::array<double,3>{0.0, 0.0, segment_start_val};
@@ -97,14 +98,14 @@ BOOST_AUTO_TEST_CASE(LFP_PointSource_LineSource) {
                         {{0.0, 0.3, 0.0},
                          {0.0, 0.7, 0.8}};
     std::vector<int> indices = {0, 1, 2, 3};
-    LFPCalculator<LineSource> lfp(MPI_COMM_WORLD, segments_starts, segments_ends, radii, indices, electrodes, 1.0);
+    LFPCalculator<LineSource> lfp(segments_starts, segments_ends, radii, indices, electrodes, 1.0);
     lfp.template lfp<std::vector<double>>({0.0, 1.0, 2.0, 3.0});
     std::vector<double> res_line_source = lfp.lfp_values;
-    LFPCalculator<PointSource> lfpp(MPI_COMM_WORLD, segments_starts, segments_ends, radii, indices, electrodes, 1.0);
+    LFPCalculator<PointSource> lfpp(segments_starts, segments_ends, radii, indices, electrodes, 1.0);
     lfpp.template lfp<std::vector<double>>({0.0, 1.0, 2.0, 3.0});
     std::vector<double> res_point_source = lfpp.lfp_values;
     BOOST_REQUIRE_CLOSE(res_line_source[0], res_point_source[0], 1.0);
     BOOST_REQUIRE_CLOSE(res_line_source[1], res_point_source[1], 1.0);
-    MPI_Finalize();
+    nrnmpi_finalize();
 }
 

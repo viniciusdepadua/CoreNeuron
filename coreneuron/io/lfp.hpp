@@ -6,10 +6,11 @@
 #include <iostream>
 #include <vector>
 
-#include <mpi.h>
+
 #include <boost/math/constants/constants.hpp>
 
 #include "coreneuron/utils/nrn_assert.h"
+#include "coreneuron/mpi/nrnmpidec.h"
 
 namespace coreneuron {
 
@@ -162,15 +163,13 @@ namespace coreneuron {
          * \param extra_cellular_conductivity conductivity of the extra-cellular medium
          */
         template <typename Point3Ds, typename Vector>
-        LFPCalculator(MPI_Comm comm,
-                      const Point3Ds& seg_start,
+        LFPCalculator(const Point3Ds& seg_start,
                       const Point3Ds& seg_end,
                       const Vector& radius,
                       const std::vector<SegmentIdTy>& segment_ids,
                       const Point3Ds& electrodes,
                       double extra_cellular_conductivity)
-			: comm_(comm)
-			, segment_ids_(segment_ids)
+			:segment_ids_(segment_ids)
         {
             if (seg_start.size() != seg_end.size()) {
                 throw std::invalid_argument("Different number of segment starts and ends.");
@@ -206,16 +205,8 @@ namespace coreneuron {
                 }
             }
             std::vector<double> res_reduced(res.size());
-            int err = MPI_Allreduce(res.data(),
-                                    res_reduced.data(),
-                                    res.size(),
-                                    MPI_DOUBLE,
-                                    MPI_SUM,
-                                    comm_
-            );
-            if (err != MPI_SUCCESS) {
-                MPI_Abort(comm_, err);
-            }
+            int mpi_sum{1};
+            nrnmpi_dbl_allreduce_vec(res.data(), res_reduced.data(), res.size(), mpi_sum);
             lfp_values = res_reduced;
         }
 
@@ -231,7 +222,6 @@ namespace coreneuron {
                            const F f) const;
 
         std::vector<std::vector<double> > m;
-        MPI_Comm comm_;
         const std::vector<SegmentIdTy>& segment_ids_;
     };
 
