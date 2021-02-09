@@ -17,26 +17,22 @@ template <typename T>
 using Array3 = std::array<T, 3>;
 
 template <typename Point3D, typename F>
-F dot(const Point3D &p1, const Point3D &p2)
-{
+F dot(const Point3D& p1, const Point3D& p2) {
     return p1[0] * p2[0] + p1[1] * p2[1] + p1[2] * p2[2];
 }
 
 template <typename Point3D, typename F>
-F norm(const Point3D &p1)
-{
+F norm(const Point3D& p1) {
     return std::sqrt(dot<Point3D, F>(p1, p1));
 }
 
 template <typename Point3D, typename F>
-Array3<F> barycenter(const Point3D &p1, const Point3D &p2)
-{
+Array3<F> barycenter(const Point3D& p1, const Point3D& p2) {
     return {0.5 * (p1[0] + p2[0]), 0.5 * (p1[1] + p2[1]), 0.5 * (p1[2] + p2[2])};
 }
 
 template <typename Point3D, typename F>
-Array3<F> axp(const Point3D &p1, const F alpha, const Point3D &p2)
-{
+Array3<F> axp(const Point3D& p1, const F alpha, const Point3D& p2) {
     return {p1[0] + alpha * p2[0], p1[1] + alpha * p2[1], p1[2] + alpha * p2[2]};
 }
 
@@ -51,8 +47,7 @@ Array3<F> axp(const Point3D &p1, const F alpha, const Point3D &p2)
  * \return Resistance of the medium from the segment to the electrode.
  */
 template <typename Point3D, typename F>
-F point_source_lfp_factor(const Point3D &e_pos, const Point3D &seg_pos, const F radius, const F f)
-{
+F point_source_lfp_factor(const Point3D& e_pos, const Point3D& seg_pos, const F radius, const F f) {
     nrn_assert(radius >= 0.0);
     Array3<F> es = axp(e_pos, -1.0, seg_pos);
     return f / std::max(norm<Point3D, F>(es), radius);
@@ -69,12 +64,11 @@ F point_source_lfp_factor(const Point3D &e_pos, const Point3D &seg_pos, const F 
  * \return Resistance of the medium from the segment to the electrode.
  */
 template <typename Point3D, typename F>
-F line_source_lfp_factor(const Point3D &e_pos,
-                         const Point3D &seg_0,
-                         const Point3D &seg_1,
+F line_source_lfp_factor(const Point3D& e_pos,
+                         const Point3D& seg_0,
+                         const Point3D& seg_1,
                          const F radius,
-                         const F f)
-{
+                         const F f) {
     nrn_assert(radius >= 0.0);
     Array3<F> dx = axp(seg_1, -1.0, seg_0);
     Array3<F> de = axp(e_pos, -1.0, seg_0);
@@ -128,17 +122,13 @@ F line_source_lfp_factor(const Point3D &e_pos,
     };
 }
 
-enum LFPCalculatorType {
-    LineSource,
-    PointSource
-};
+enum LFPCalculatorType { LineSource, PointSource };
 
 /**
  * \brief LFPCalculator allows calculation of LFP given membrane currents.
  */
 template <LFPCalculatorType Ty, typename SegmentIdTy = int>
 struct LFPCalculator {
-
     /**
      * LFP Calculator constructor
      * \tparam Point3Ds A vector of 3D points type
@@ -153,14 +143,13 @@ struct LFPCalculator {
      * medium
      */
     template <typename Point3Ds, typename Vector>
-    LFPCalculator(const Point3Ds &seg_start,
-                  const Point3Ds &seg_end,
-                  const Vector &radius,
-                  const std::vector<SegmentIdTy> &segment_ids,
-                  const Point3Ds &electrodes,
+    LFPCalculator(const Point3Ds& seg_start,
+                  const Point3Ds& seg_end,
+                  const Vector& radius,
+                  const std::vector<SegmentIdTy>& segment_ids,
+                  const Point3Ds& electrodes,
                   double extra_cellular_conductivity)
-        : segment_ids_(segment_ids)
-    {
+        : segment_ids_(segment_ids) {
         if (seg_start.size() != seg_end.size()) {
             throw std::invalid_argument("Different number of segment starts and ends.");
         }
@@ -171,7 +160,7 @@ struct LFPCalculator {
 
         m.resize(electrodes.size());
         for (size_t k = 0; k < electrodes.size(); ++k) {
-            auto &ms = m[k];
+            auto& ms = m[k];
             ms.resize(seg_start.size());
             for (size_t l = 0; l < seg_start.size(); l++) {
                 ms[l] = getFactor(electrodes[k], seg_start[l], seg_end[l], radius[l], f);
@@ -180,12 +169,11 @@ struct LFPCalculator {
     }
 
     template <typename Vector>
-    void lfp(const Vector &membrane_current)
-    {
+    void lfp(const Vector& membrane_current) {
         std::vector<double> res(m.size());
         for (size_t k = 0; k < m.size(); ++k) {
             res[k] = 0.0;
-            auto &ms = m[k];
+            auto& ms = m[k];
             for (size_t l = 0; l < ms.size(); l++) {
                 res[k] += ms[l] * membrane_current[segment_ids_[l]];
             }
@@ -204,37 +192,35 @@ struct LFPCalculator {
 
   private:
     template <typename Point3D, typename F>
-    inline F getFactor(const Point3D &e_pos,
-                       const Point3D &seg_0,
-                       const Point3D &seg_1,
+    inline F getFactor(const Point3D& e_pos,
+                       const Point3D& seg_0,
+                       const Point3D& seg_1,
                        const F radius,
                        const F f) const;
 
-    std::vector<std::vector<double> > m;
-    const std::vector<SegmentIdTy> &segment_ids_;
+    std::vector<std::vector<double>> m;
+    const std::vector<SegmentIdTy>& segment_ids_;
 };
 
 template <>
 template <typename Point3D, typename F>
-F LFPCalculator<LineSource>::getFactor(const Point3D &e_pos,
-                                       const Point3D &seg_0,
-                                       const Point3D &seg_1,
+F LFPCalculator<LineSource>::getFactor(const Point3D& e_pos,
+                                       const Point3D& seg_0,
+                                       const Point3D& seg_1,
                                        const F radius,
-                                       const F f) const
-{
+                                       const F f) const {
     return line_source_lfp_factor(e_pos, seg_0, seg_1, radius, f);
 }
 
 template <>
 template <typename Point3D, typename F>
-F LFPCalculator<PointSource>::getFactor(const Point3D &e_pos,
-                                        const Point3D &seg_0,
-                                        const Point3D &seg_1,
+F LFPCalculator<PointSource>::getFactor(const Point3D& e_pos,
+                                        const Point3D& seg_0,
+                                        const Point3D& seg_1,
                                         const F radius,
-                                        const F f) const
-{
+                                        const F f) const {
     return point_source_lfp_factor(e_pos, barycenter<Point3D, F>(seg_0, seg_1), radius, f);
 }
-};
+};  // namespace coreneuron
 
 #endif  // AREA_LFP_H
