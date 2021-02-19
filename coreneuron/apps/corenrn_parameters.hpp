@@ -40,7 +40,7 @@ struct corenrn_parameters {
 
     const int report_buff_size_default = 4;
 
-    unsigned spikebuf = 100'000;           /// Internal buffer used on every rank for spikes
+    unsigned spikebuf = 100000;           /// Internal buffer used on every rank for spikes
     int prcellgid = -1;                    /// Gid of cell for prcellstate
     unsigned ms_phases = 2;                /// Number of multisend phases, 1 or 2
     unsigned ms_subint = 2;                /// Number of multisend interval. 1 or 2

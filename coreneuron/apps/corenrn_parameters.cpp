@@ -30,7 +30,7 @@ corenrn_parameters::corenrn_parameters() {
                    this->dt,
                    "Fixed time step. The default value is set by defaults.dat or is 0.025.",
                    true)
-        ->check(CLI::Range(-1'000., 1e9));
+        ->check(CLI::Range(-1000., 1e9));
     app.add_option("-e, --tstop", this->tstop, "Stop Time in ms.")->check(CLI::Range(0., 1e9));
     app.add_flag("--show");
     app.add_set(
@@ -44,7 +44,7 @@ corenrn_parameters::corenrn_parameters() {
 
     auto sub_gpu = app.add_option_group("GPU", "Commands relative to GPU.");
     sub_gpu->add_option("-W, --nwarp", this->nwarp, "Number of warps to balance.", true)
-        ->check(CLI::Range(0, 1'000'000));
+        ->check(CLI::Range(0, 1000000));
     sub_gpu
         ->add_option("-R, --cell-permute",
                      this->cell_interleave_permute,
@@ -65,7 +65,7 @@ corenrn_parameters::corenrn_parameters() {
         ->check(CLI::ExistingFile);
     sub_input
         ->add_option("-s, --seed", this->seed, "Initialization seed for random number generator.")
-        ->check(CLI::Range(0, 100'000'000));
+        ->check(CLI::Range(0, 100000000));
     sub_input
         ->add_option("-v, --voltage",
                      this->voltage,
@@ -106,17 +106,17 @@ corenrn_parameters::corenrn_parameters() {
                      this->spkcompress,
                      "Spike compression. Up to ARG are exchanged during MPI_Allgather.",
                      true)
-        ->check(CLI::Range(0, 100'000));
+        ->check(CLI::Range(0, 100000));
     sub_spike->add_flag("--binqueue", this->binqueue, "Use bin queue.");
 
     auto sub_config = app.add_option_group("config", "Config options.");
     sub_config->add_option("-b, --spikebuf", this->spikebuf, "Spike buffer size.", true)
-        ->check(CLI::Range(0, 2'000'000'000));
+        ->check(CLI::Range(0, 2000000000));
     sub_config
         ->add_option("-g, --prcellgid",
                      this->prcellgid,
                      "Output prcellstate information for the gid NUMBER.")
-        ->check(CLI::Range(-1, 2'000'000'000));
+        ->check(CLI::Range(-1, 2000000000));
     sub_config->add_option("-k, --forwardskip", this->forwardskip, "Forwardskip to TIME")
         ->check(CLI::Range(0., 1e9));
     sub_config

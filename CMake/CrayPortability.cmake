@@ -18,7 +18,8 @@ if(CRAY_SYSTEM)
   set(MPI_LIBRARIES "")
   set(MPI_C_LIBRARIES "")
   set(MPI_CXX_LIBRARIES "")
-
+  set(CMAKE_C_COMPILE_OPTIONS_PIC "-hPIC")
+  set(CMAKE_CXX_COMPILE_OPTIONS_PIC "-hPIC")
   # ~~~
   # instead of -rdynamic, cray wrapper needs either -dynamic or -static(default)
   # also cray compiler needs fPIC flag
@@ -27,8 +28,9 @@ if(CRAY_SYSTEM)
     set(CMAKE_SHARED_LIBRARY_LINK_CXX_FLAGS "-dynamic")
     # TODO: add Cray compiler flag configurations in CompilerFlagsHelpers.cmake
     if(CMAKE_C_COMPILER_IS_CRAY)
-      set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC")
-      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
+      message("======= Setting -hpic =======")
+      set(CMAKE_C_COMPILE_OPTIONS_PIC "-hPIC")
+      set(CMAKE_CXX_COMPILE_OPTIONS_PIC "-hPIC")
     endif()
 
   else()
