@@ -41,6 +41,10 @@ void nrn_flush_reports(double t) {
 #ifdef ENABLE_SONATA_REPORTS
     sonata_check_and_flush(t);
 #endif
+
+    if (getenv("CORENEURON_FORCE_FLUSH") != NULL && std::string(getenv("CORENEURON_FORCE_FLUSH")) == "true") {
+        finalize_report();
+    }
 }
 
 /** in the current implementation, we call flush during every spike exchange
