@@ -322,22 +322,22 @@ static void* nrn_fixed_step_thread(NrnThread* nth) {
 
         {
             Instrumentor::phase p("setup_tree_matrix");
-            setup_tree_matrix_minimal(nth);
+            //setup_tree_matrix_minimal(nth);
         }
 
         {
             Instrumentor::phase p("matrix-solver");
-            nrn_solve_minimal(nth);
+            //nrn_solve_minimal(nth);
         }
 
         {
             Instrumentor::phase p("second_order_cur");
-            second_order_cur(nth, secondorder);
+            //second_order_cur(nth, secondorder);
         }
 
         {
             Instrumentor::phase p("update");
-            update(nth);
+            //update(nth);
         }
     }
     if (!nrn_have_gaps) {
@@ -361,8 +361,8 @@ void* nrn_fixed_step_lastpart(NrnThread* nth) {
 // clang-format on
 #endif
 
-        fixed_play_continuous(nth);
-        nonvint(nth);
+        //fixed_play_continuous(nth);
+        //nonvint(nth);
         nrncore2nrn_send_values(nth);
         nrn_ba(nth, AFTER_SOLVE);
         nrn_ba(nth, BEFORE_STEP);
@@ -372,7 +372,7 @@ void* nrn_fixed_step_lastpart(NrnThread* nth) {
 
     {
         Instrumentor::phase p("deliver_events");
-        nrn_deliver_events(nth); /* up to but not past texit */
+        //nrn_deliver_events(nth); /* up to but not past texit */
     }
 
     return nullptr;
