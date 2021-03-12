@@ -1,0 +1,59 @@
+include:
+  - project: hpc/gitlab-pipelines
+    file:
+      - spack-build-components.gitlab-ci.yml
+      - github-project-pipelines.gitlab-ci.yml
+
+stages:
+    - .pre
+    - build
+    - test
+    - build_neuron
+    - test_neuron
+
+# Set up Spack
+spack_setup:
+  extends: .spack_setup_ccache
+
+.spack_intel:
+  variables:
+    SPACK_PACKAGE_COMPILER: intel
+.spack_coreneuron:
+  variables:
+    SPACK_PACKAGE: coreneuron
+    SPACK_PACKAGE_SPEC: +debug+tests~legacy-unit
+.spack_neuron:
+  variables:
+    SPACK_PACKAGE: neuron
+    SPACK_PACKAGE_REF: '' # Take the default branch
+    SPACK_PACKAGE_SPEC: +coreneuron+debug+tests~legacy-unit
+
+# CoreNEURON will be checked out for us by default
+build:coreneuron:intel:
+  extends:
+    - .spack_build
+    - .spack_coreneuron
+    - .spack_intel
+
+test:coreneuron:intel:
+  extends:
+    - .ctest
+  needs: ["build:coreneuron:intel"]
+
+build:neuron:intel:
+  stage: build_neuron
+  extends:
+    - .spack_build
+    - .spack_neuron
+    - .spack_intel
+  needs: ["build:coreneuron:intel"]
+
+test:neuron:intel:
+  stage: test_neuron
+  before_script:
+    - !reference [.ctest, before_script]
+    # Wipe Slurm environment to try and keep mpiexec happy.
+    - unset $(env|awk -F= '/^SLURM_/ {if (match($1, "_(ACCOUNT|PARTITION)$")==0) print $1}')
+  extends:
+    - .ctest
+  needs: ["build:neuron:intel"]
