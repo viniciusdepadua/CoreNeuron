@@ -98,4 +98,49 @@ void nrn_finitialize(int setv, double v) {
     }
     Instrumentor::phase_end("finitialize");
 }
+
+/**
+  All state from NEURON necessary to continue a run.
+
+  In NEURON direct mode, we desire the exact behavior of
+  ParallelContext.psolve(tstop). I.e. a sequence of such calls with and
+  without intervening calls to h.finitialize(). Most state (structure
+  and data of the substantive model) has been copied
+  from NEURON during nrn_setup. Now we need to copy the event queue
+  and set up any other invalid internal structures. I.e basically the
+  nrn_finitialize above but without changing any simulation data. We follow
+  some of the strategy of checkpoint_initialize.
+**/
+void direct_mode_initialize() {
+  dt2thread(-1.);
+  nrn_thread_table_check();
+  nrn_spike_exchange_init();
+
+  // in case some nrn_init allocate data we need to do that but do not
+  // want to call initmodel.
+  _nrn_skip_initmodel = true;
+  for (int i = 0; i < nrn_nthread; ++i) {  // should be parallel
+    NrnThread& nt = nrn_threads[i];
+    for (NrnThreadMembList* tml = nt.tml; tml; tml = tml->next) {
+      Memb_list* ml = tml->ml;
+      mod_f_t s = corenrn.get_memb_func(tml->index).initialize;
+      if (s) {
+        (*s)(&nt, ml, tml->index);
+      }
+    }
+  }
+  _nrn_skip_initmodel = false;
+
+  // the things done by checkpoint restore at the end of Phase2::read_file
+    // vec_play_continuous n_vec_play_continuous of them
+    // patstim_index
+    // preSynConditionEventFlags nt.n_presyn of them
+    // restore_events
+    // restore_events
+  // the things done for checkpoint at the end of Phase2::populate
+    // checkpoint_restore_tqueue
+  // Lastly, if PatternStim exists, needs initialization
+    // checkpoint_restore_patternstim
+}
+
 }  // namespace coreneuron

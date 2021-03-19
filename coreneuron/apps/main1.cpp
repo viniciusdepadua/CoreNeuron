@@ -169,7 +169,9 @@ void nrn_init_and_load_data(int argc,
 
     // set global variables for start time, timestep and temperature
     std::string restore_path = corenrn_param.restorepath;
-    t = restore_time(restore_path.c_str());
+    if (!corenrn_embedded) {
+        t = restore_time(restore_path.c_str());
+    }
 
     if (corenrn_param.dt != -1000.) {  // command line arg highest precedence
         dt = corenrn_param.dt;
@@ -362,7 +364,7 @@ void get_nrn_trajectory_requests(int bsize) {
                 tr->vpr = vpr;
                 tr->gather = new double*[n_trajec];
                 tr->varrays = varrays;
-                tr->scatter = pvars;
+                 tr->scatter = pvars;
                 for (int i = 0; i < n_trajec; ++i) {
                     tr->gather[i] = stdindex2ptr(types[i], indices[i], nt);
                 }
@@ -379,7 +381,7 @@ static void trajectory_return() {
             NrnThread& nt = nrn_threads[tid];
             TrajectoryRequests* tr = nt.trajec_requests;
             if (tr && tr->varrays) {
-                (*nrn2core_trajectory_return_)(tid, tr->n_pr, tr->vsize, tr->vpr, nt._t);
+                (*nrn2core_trajectory_return_)(tid, tr->n_pr, tr->bsize, tr->vsize, tr->vpr, nt._t);
             }
         }
     }
@@ -464,7 +466,7 @@ extern "C" int run_solve_core(int argc, char** argv) {
         reports_needs_finalize = configs.size();
     }
 
-    // initializationa and loading functions moved to separate
+    // initialization and loading functions moved to separate
     {
         Instrumentor::phase p("load-model");
         nrn_init_and_load_data(argc, argv, !configs.empty());
@@ -508,16 +510,27 @@ extern "C" int run_solve_core(int argc, char** argv) {
         // In direct mode there are likely trajectory record requests
         // to allow processing in NEURON after simulation by CoreNEURON
         if (corenrn_embedded) {
-            // arg is vector size required but NEURON can instead
+            // arg is additional vector size required (how many items will be
+            // written to the double*) but NEURON can instead
             // specify that returns will be on a per time step basis.
-            get_nrn_trajectory_requests(int(tstop / dt) + 2);
+            get_nrn_trajectory_requests(int((tstop - t) / dt) + 2);
             (*nrn2core_part2_clean_)();
         }
 
         // TODO : if some ranks are empty then restore will go in deadlock
         // phase (as some ranks won't have restored anything and hence return
         // false in checkpoint_initialize
-        if (!checkpoint_initialize()) {
+        if (corenrn_embedded) {
+            // In direct mode, CoreNEURON has exactly the behavior of
+            // ParallelContext.psolve(tstop). Ie a sequence of such calls
+            // without an intervening h.finitialize() continues from the end
+            // of the previous call. I.e., all initial state, including
+            // the event queue has been set up in NEURON. And, at the end
+            // all final state, including the event queue will be sent back
+            // to NEURON. Here there is some first time only
+            // initialization and queue transfer.
+            direct_mode_initialize();
+        }else if (!checkpoint_initialize()) {
             nrn_finitialize(v != 1000., v);
         }
 
