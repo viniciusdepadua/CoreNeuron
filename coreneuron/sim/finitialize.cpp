@@ -13,6 +13,7 @@
 #include "coreneuron/sim/multicore.hpp"
 #include "coreneuron/utils/profile/profiler_interface.h"
 #include "coreneuron/coreneuron.hpp"
+#include "coreneuron/utils/nrnoc_aux.hpp"
 
 namespace coreneuron {
 
@@ -99,6 +100,9 @@ void nrn_finitialize(int setv, double v) {
     Instrumentor::phase_end("finitialize");
 }
 
+// helper functions defined below.
+static void nrn2core_tqueue();
+
 /**
   All state from NEURON necessary to continue a run.
 
@@ -141,6 +145,93 @@ void direct_mode_initialize() {
     // checkpoint_restore_tqueue
   // Lastly, if PatternStim exists, needs initialization
     // checkpoint_restore_patternstim
+  // io/nrn_checkpoint.cpp: write_tqueue contains examples for each
+    // DiscreteEvent type with regard to the information needed for each
+    // subclass from the point of view of CoreNEURON.
+    // E.g. for NetConType_, just netcon_index
+    // The trick, then, is to figure out the CoreNEURON info from the
+    // NEURON queue items and that should be available in passing from
+    // the existing processing of nrncore_write.
+
+  nrn2core_tqueue();
+}
+
+// For direct transfer of event queue information
+// Must be the same as corresponding struct NrnCoreTransferEvents in NEURON
+struct NrnCoreTransferEvents {
+  std::vector<int> type; // DiscreteEvent type
+  std::vector<double> td; // delivery time
+  std::vector<int> intdata; // ints specific to the DiscreteEvent type
+  std::vector<double> dbldata; // doubles specific to the type.
+};
+
+
+extern "C" {
+/** Pointer to function in NEURON that iterates over its tqeueue **/
+NrnCoreTransferEvents* (*nrn2core_transfer_tqueue_)(int tid);
+}
+
+/** Copy each thread's queue from NEURON **/
+static void nrn2core_tqueue() {
+  for (int tid=0; tid < nrn_nthread; ++tid) { // should be parallel
+    NrnCoreTransferEvents* ncte = (*nrn2core_transfer_tqueue_)(tid);
+    if (ncte) {
+      size_t idat = 0;
+      size_t idbldat = 0;
+      NrnThread& nt = nrn_threads[tid];
+      for (size_t i = 0; i < ncte->type.size(); ++i) {
+        switch (ncte->type[i]) {
+          case 2: { // NetCon
+            int ncindex = ncte->intdata[idat++];
+            printf("ncindex = %d\n", ncindex);
+            NetCon* nc = nt.netcons + ncindex;
+printf("nrn2core_tqueue tid=%d i=%zd type=%d tdeliver=%g NetCon %d\n",
+tid, i, ncte->type[i], ncte->td[i], ncindex);
+            nc->send(ncte->td[i], net_cvode_instance, &nt);
+          } break;
+          case 3: { // SelfEvent
+            // target_type, point_proc_instance, target_instance, flag
+            // movable, weight_index
+            int target_type = ncte->intdata[idat++];
+            int target_instance = ncte->intdata[idat++];
+            int netcon_index = ncte->intdata[idat++]; // for weight
+            double flag = ncte->dbldata[idbldat++];
+            Point_process* pnt = nt.pntprocs + 0; // fixme;
+            //nrn_assert(target_instance == pnt->_i_instance);
+            //nrn_assert(target_type == pnt->_type);
+            int movable = ncte->intdata[idat++];
+printf("nrn2core_tqueue tid=%d i=%zd type=%d tdeliver=%g SelfEvent\n",
+tid, i, ncte->type[i], ncte->td[i]);
+printf("  target_type=%d pnt data index=%d flag=%g movable_index=%d netcon index for weight=%d\n",
+target_type, target_instance, flag, movable, netcon_index);
+            assert(movable != -1);
+int weight_index = 0;
+            net_send(nt._vdata + movable, weight_index, pnt, ncte->td[i], flag);
+          } break;
+          case 4: { // PreSyn
+            int ps_index = ncte->intdata[idat++];
+printf("nrn2core_tqueue tid=%d i=%zd type=%d tdeliver=%g PreSyn %d\n",
+tid, i, ncte->type[i], ncte->td[i], ps_index);
+            printf("ps_index = %d\n", ps_index);
+            PreSyn* ps = nt.presyns + ps_index;
+            int gid = ps->output_index_;
+            // Following assumes already sent to other machines.
+            ps->output_index_ = -1;
+            ps->send(ncte->td[i], net_cvode_instance, &nt);
+            ps->output_index_ = gid;
+          } break;
+          case 7: { // NetParEvent
+          } break;
+          default: {
+            static char s[20];
+            sprintf(s, "%d", ncte->type[i]);
+            hoc_execerror("Unimplemented transfer queue event type:", s);
+          } break;
+        }
+      }
+      delete ncte;
+    }
+  }
 }
 
 }  // namespace coreneuron

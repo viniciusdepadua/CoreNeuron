@@ -514,7 +514,6 @@ extern "C" int run_solve_core(int argc, char** argv) {
             // written to the double*) but NEURON can instead
             // specify that returns will be on a per time step basis.
             get_nrn_trajectory_requests(int((tstop - t) / dt) + 2);
-            (*nrn2core_part2_clean_)();
         }
 
         // TODO : if some ranks are empty then restore will go in deadlock
@@ -530,6 +529,7 @@ extern "C" int run_solve_core(int argc, char** argv) {
             // to NEURON. Here there is some first time only
             // initialization and queue transfer.
             direct_mode_initialize();
+            (*nrn2core_part2_clean_)();
         }else if (!checkpoint_initialize()) {
             nrn_finitialize(v != 1000., v);
         }
