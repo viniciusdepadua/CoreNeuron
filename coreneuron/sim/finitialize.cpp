@@ -185,34 +185,55 @@ static void nrn2core_tqueue() {
             int ncindex = ncte->intdata[idat++];
             printf("ncindex = %d\n", ncindex);
             NetCon* nc = nt.netcons + ncindex;
+#define DEBUGQUEUE 0
+#if DEBUGQUEUE
 printf("nrn2core_tqueue tid=%d i=%zd type=%d tdeliver=%g NetCon %d\n",
 tid, i, ncte->type[i], ncte->td[i], ncindex);
+#endif
             nc->send(ncte->td[i], net_cvode_instance, &nt);
           } break;
           case 3: { // SelfEvent
-            // target_type, point_proc_instance, target_instance, flag
-            // movable, weight_index
+            // target_type, target_instance, weight_index, flag movable
+
+            // This is a nightmare and needs to be profoundly re-imagined.
+
+            // Determine Point_process*
             int target_type = ncte->intdata[idat++];
             int target_instance = ncte->intdata[idat++];
-            int netcon_index = ncte->intdata[idat++]; // for weight
+            // From target_type and target_instance (mechanism data index)
+            // compute the nt.pntprocs index.
+            int offset = nt._pnt_offset[target_type];
+            Point_process* pnt = nt.pntprocs + offset + target_instance;
+            assert(pnt->_type == target_type);
+            assert(pnt->_i_instance == target_instance);
+            assert(pnt->_tid == tid);
+
+            // Determine weight_index
+            int netcon_index = ncte->intdata[idat++]; // via the NetCon
+            int weight_index = nt.netcons[netcon_index].u.weight_index_;
+
             double flag = ncte->dbldata[idbldat++];
-            Point_process* pnt = nt.pntprocs + 0; // fixme;
-            //nrn_assert(target_instance == pnt->_i_instance);
-            //nrn_assert(target_type == pnt->_type);
-            int movable = ncte->intdata[idat++];
+            int is_movable = ncte->intdata[idat++];
+            // If the queue item is movable, then the pointer needs to be
+            // stored in the mechanism instance movable slot by net_send.
+            // And don't overwrite if not movable. Only one SelfEvent
+            // for a given target instance is movable.
+            int movable = 0;
+
+#if DEBUGQUEUE
 printf("nrn2core_tqueue tid=%d i=%zd type=%d tdeliver=%g SelfEvent\n",
 tid, i, ncte->type[i], ncte->td[i]);
-printf("  target_type=%d pnt data index=%d flag=%g movable_index=%d netcon index for weight=%d\n",
-target_type, target_instance, flag, movable, netcon_index);
-            assert(movable != -1);
-int weight_index = 0;
+printf("  target_type=%d pnt data index=%d flag=%g is_movable=%d netcon index for weight=%d\n",
+target_type, target_instance, flag, is_movable, netcon_index);
+#endif
             net_send(nt._vdata + movable, weight_index, pnt, ncte->td[i], flag);
           } break;
           case 4: { // PreSyn
             int ps_index = ncte->intdata[idat++];
+#if DEBUGQUEUE
 printf("nrn2core_tqueue tid=%d i=%zd type=%d tdeliver=%g PreSyn %d\n",
 tid, i, ncte->type[i], ncte->td[i], ps_index);
-            printf("ps_index = %d\n", ps_index);
+#endif
             PreSyn* ps = nt.presyns + ps_index;
             int gid = ps->output_index_;
             // Following assumes already sent to other machines.

@@ -1047,6 +1047,10 @@ void Phase2::populate(NrnThread& nt, const UserParams& userParams) {
         }
     }
 
+    // pnt_offset needed for SelfEvent transfer from NEURON. Not needed on GPU.
+    // Ugh. Related but not same as NetReceiveBuffer._pnt_offset
+    nt._pnt_offset = pnt_offset;
+
     pdata_relocation(nt, memb_func);
 
     /* if desired, apply the node permutation. This involves permuting

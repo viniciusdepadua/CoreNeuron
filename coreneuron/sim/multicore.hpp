@@ -136,6 +136,8 @@ struct NrnThread: public MemoryManaged {
     /* Needed in case there are FOR_NETCON statements in use. */
     std::vector<size_t> _fornetcon_perm_indices; /* displacement like list of indices */
     std::vector<size_t> _fornetcon_weight_perm;  /* permutation indices into weight */
+
+    std::vector<int> _pnt_offset; /* for SelfEvent queue transfer */
 };
 
 extern void nrn_threads_create(int n);
