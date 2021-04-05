@@ -218,7 +218,9 @@ tid, i, ncte->type[i], ncte->td[i], ncindex);
             // stored in the mechanism instance movable slot by net_send.
             // And don't overwrite if not movable. Only one SelfEvent
             // for a given target instance is movable.
-            int movable = 0;
+            int movable = -1;
+            if (is_movable) {
+            }
 
 #if DEBUGQUEUE
 printf("nrn2core_tqueue tid=%d i=%zd type=%d tdeliver=%g SelfEvent\n",
