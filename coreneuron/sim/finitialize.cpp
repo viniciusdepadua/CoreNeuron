@@ -14,6 +14,7 @@
 #include "coreneuron/utils/profile/profiler_interface.h"
 #include "coreneuron/coreneuron.hpp"
 #include "coreneuron/utils/nrnoc_aux.hpp"
+#include "coreneuron/io/mem_layout_util.hpp" // for WATCH use of nrn_i_layout
 
 namespace coreneuron {
 
@@ -102,6 +103,15 @@ void nrn_finitialize(int setv, double v) {
 
 // helper functions defined below.
 static void nrn2core_tqueue();
+static void watch_activate_clear();
+static void nrn2core_transfer_watch_condition(int, int, int, int, int);
+
+extern "C" {
+/** Pointer to function in NEURON that iterates over activated
+    WATCH statements, sending each item to ...
+**/
+void (*nrn2core_transfer_watch_)(void(*cb)(int, int, int, int, int));
+}
 
 /**
   All state from NEURON necessary to continue a run.
@@ -118,6 +128,14 @@ static void nrn2core_tqueue();
 void direct_mode_initialize() {
   dt2thread(-1.);
   nrn_thread_table_check();
+
+  // Reproduce present NEURON WATCH activation
+  // Start from nothing active.
+  watch_activate_clear();
+  // nrn2core_transfer_watch_condition(...) receives the WATCH activation info
+  // on a per active WatchCondition basis from NEURON.
+  (*nrn2core_transfer_watch_)(nrn2core_transfer_watch_condition);
+
   nrn_spike_exchange_init();
 
   // in case some nrn_init allocate data we need to do that but do not
@@ -181,17 +199,23 @@ static void nrn2core_tqueue() {
       NrnThread& nt = nrn_threads[tid];
       for (size_t i = 0; i < ncte->type.size(); ++i) {
         switch (ncte->type[i]) {
+
+          case 0: { // DiscreteEvent
+            //Ignore
+          } break;
+
           case 2: { // NetCon
             int ncindex = ncte->intdata[idat++];
             printf("ncindex = %d\n", ncindex);
             NetCon* nc = nt.netcons + ncindex;
-#define DEBUGQUEUE 0
+#define DEBUGQUEUE 1
 #if DEBUGQUEUE
 printf("nrn2core_tqueue tid=%d i=%zd type=%d tdeliver=%g NetCon %d\n",
 tid, i, ncte->type[i], ncte->td[i], ncindex);
 #endif
             nc->send(ncte->td[i], net_cvode_instance, &nt);
           } break;
+
           case 3: { // SelfEvent
             // target_type, target_instance, weight_index, flag movable
 
@@ -230,6 +254,7 @@ target_type, target_instance, flag, is_movable, netcon_index);
 #endif
             net_send(nt._vdata + movable, weight_index, pnt, ncte->td[i], flag);
           } break;
+
           case 4: { // PreSyn
             int ps_index = ncte->intdata[idat++];
 #if DEBUGQUEUE
@@ -243,8 +268,14 @@ tid, i, ncte->type[i], ncte->td[i], ps_index);
             ps->send(ncte->td[i], net_cvode_instance, &nt);
             ps->output_index_ = gid;
           } break;
+
           case 7: { // NetParEvent
+#if DEBUGQUEUE
+printf("nrn2core_tqueue tid=%d i=%zd type=%d tdeliver=%g NetParEvent\n",
+tid, i, ncte->type[i], ncte->td[i]);
+#endif
           } break;
+
           default: {
             static char s[20];
             sprintf(s, "%d", ncte->type[i]);
@@ -255,6 +286,88 @@ tid, i, ncte->type[i], ncte->td[i], ps_index);
       delete ncte;
     }
   }
+}
+
+void watch_activate_clear() {
+  // Can identify mechanisms with WATCH statements from non-NULL
+  // corenrn.get_watch_check()[type] and figure out pdata that are
+  // _watch_array items from corenrn.get_memb_func(type).dparam_semantics
+  // Ironically, all WATCH statements may already be inactivated in
+  // consequence of phase2 transfer. But, for direct mode psolve, we would
+  // eventually like to minimise that transfer (at least with respect to
+  // structure).
+
+  // Loop over threads, mechanisms and pick out the ones with WATCH statements.
+  for (int tid = 0; tid < nrn_nthread; ++tid) {
+    NrnThread& nt = nrn_threads[tid];
+    for (NrnThreadMembList* tml = nt.tml; tml; tml = tml->next) {
+      if (corenrn.get_watch_check()[tml->index]) {
+        // zero all the WATCH slots.
+        Memb_list* ml =tml->ml;
+        int type = tml->index;
+        int* semantics = corenrn.get_memb_func(type).dparam_semantics;
+        int dparam_size = corenrn.get_prop_dparam_size()[type];
+        // which slots are WATCH
+        int first = -1;
+        int last = 0;
+        for (int i=0; i < dparam_size; ++i) {
+          if (semantics[i] == -8) { // WATCH
+            if (first == -1) {
+              first = i;
+            }
+            last = i;
+          }
+        }
+        // Zero the _watch_array from first to last inclusive.
+        // Note: the first is actually unused but is there because NEURON
+        // uses it. There is probably a better way to do this.
+        int* pdata = ml->pdata;
+        int nodecount = ml->nodecount;
+        int layout = corenrn.get_mech_data_layout()[type];
+        for (int iml = 0; iml < nodecount; ++iml) {
+          for (int i = first; i <= last; ++i) {
+            int* pd = pdata + nrn_i_layout(iml, nodecount, i, dparam_size, layout);
+            *pd = 0;
+          }
+        }
+      }
+    }
+  }
+}
+
+void nrn2core_transfer_watch_condition(int tid, int pnttype, int pntindex,
+  int watch_index, int triggered)
+{
+  // Note: watch_index relative to AoS _ppvar for instance.
+printf("CoreNEURON WatchCondition tid=%d type=%d index=%d watch_index=%d triggered=%d\n",
+tid, pnttype, pntindex, watch_index, triggered);
+  NrnThread& nt = nrn_threads[tid];
+  int pntoffset = nt._pnt_offset[pnttype];
+  Point_process* pnt = nt.pntprocs + (pntoffset + pntindex);
+  assert(pnt->_type == pnttype);
+  assert(pnt->_i_instance == pntindex); // is this true for permutation?
+  assert(pnt->_tid == tid);
+
+  // perhaps all this should be more closely associated with phase2 since
+  // we are really talking about (direct) transfer from NEURON and not able
+  // to rely on finitialize() on the CoreNEURON side which would otherwise
+  // set up all this stuff as a consequence of SelfEvents initiated
+  // and delivered at time 0.
+  // I've become shakey in regard to how this is done since the reorganization
+  // from where everything was done in nrn_setup.cpp. Here, I'm guessing
+  // nrn_i_layout is the relevant index transformation after finding the
+  // beginning of the mechanism pdata.
+  Memb_list* ml = nt._ml_list[pnttype];
+  int* pdata = ml->pdata;
+  int iml = pntindex;
+  int nodecount = ml->nodecount;
+  int i = watch_index;
+  int dparam_size = corenrn.get_prop_dparam_size()[pnttype];
+  int layout = corenrn.get_mech_data_layout()[pnttype];
+  int* pd = pdata + nrn_i_layout(iml, nodecount, i, dparam_size, layout);
+
+  // activate the WatchCondition
+  *pd = 2 + triggered;
 }
 
 }  // namespace coreneuron
