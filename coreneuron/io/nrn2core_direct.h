@@ -86,7 +86,10 @@ extern int (*nrn2core_get_dat2_vecplay_inst_)(int tid,
                                               int& ix,
                                               int& sz,
                                               double*& yvec,
-                                              double*& tvec);
+                                              double*& tvec,
+                                              int& last_index,
+                                              int& discon_index,
+                                              int& ubound_index);
 
 extern void (*nrn2core_part2_clean_)();
 

@@ -15,6 +15,7 @@
 #include "coreneuron/coreneuron.hpp"
 #include "coreneuron/utils/nrnoc_aux.hpp"
 #include "coreneuron/io/mem_layout_util.hpp" // for WATCH use of nrn_i_layout
+#include "coreneuron/utils/vrecitem.h"
 
 namespace coreneuron {
 
@@ -105,6 +106,7 @@ void nrn_finitialize(int setv, double v) {
 static void nrn2core_tqueue();
 static void watch_activate_clear();
 static void nrn2core_transfer_watch_condition(int, int, int, int, int);
+static void vec_play_activate();
 
 extern "C" {
 /** Pointer to function in NEURON that iterates over activated
@@ -171,7 +173,24 @@ void direct_mode_initialize() {
     // NEURON queue items and that should be available in passing from
     // the existing processing of nrncore_write.
 
+  // activate the vec_play_continuous events defined in phase2 setup.
+  vec_play_activate();
+
   nrn2core_tqueue();
+}
+
+void vec_play_activate() {
+  for (int tid = 0; tid < nrn_nthread; ++tid) {
+    NrnThread* nt = nrn_threads + tid;
+    for (int i = 0; i < nt->n_vecplay; ++i) {
+      PlayRecord* pr = (PlayRecord*)nt->_vecplay[i];
+      assert(pr->type() == VecPlayContinuousType);
+      VecPlayContinuous* vpc = (VecPlayContinuous*)pr;
+      assert(vpc->e_);
+      assert(vpc->discon_indices_ == NULL); // not implemented
+      vpc->e_->send(vpc->t_[vpc->ubound_index_], net_cvode_instance, nt);
+    }
+  }
 }
 
 // For direct transfer of event queue information
@@ -267,6 +286,10 @@ tid, i, ncte->type[i], ncte->td[i], ps_index);
             ps->output_index_ = -1;
             ps->send(ncte->td[i], net_cvode_instance, &nt);
             ps->output_index_ = gid;
+          } break;
+
+          case 6: { // PlayRecordEvent
+            // Ignore as phase2 handles analogous to checkpoint restore.
           } break;
 
           case 7: { // NetParEvent

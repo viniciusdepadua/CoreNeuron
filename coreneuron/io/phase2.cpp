@@ -71,7 +71,10 @@ int (*nrn2core_get_dat2_vecplay_inst_)(int tid,
                                        int& ix,
                                        int& sz,
                                        double*& yvec,
-                                       double*& tvec);
+                                       double*& tvec,
+                                       int& last_index,
+                                       int& discon_index,
+                                       int& ubound_index);
 
 namespace coreneuron {
 template <typename T>
@@ -386,7 +389,8 @@ void Phase2::read_direct(int thread_id, const NrnThread& nt) {
         double *yvec_, *tvec_;
         int sz;
         (*nrn2core_get_dat2_vecplay_inst_)(
-            thread_id, i, item.vtype, item.mtype, item.ix, sz, yvec_, tvec_);
+            thread_id, i, item.vtype, item.mtype, item.ix, sz, yvec_, tvec_,
+            item.last_index, item.discon_index, item.ubound_index);
         item.yvec = IvocVect(sz);
         item.tvec = IvocVect(sz);
         std::copy(yvec_, yvec_ + sz, item.yvec.data());
