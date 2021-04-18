@@ -388,9 +388,17 @@ void Phase2::read_direct(int thread_id, const NrnThread& nt) {
         // NEURON Vector
         double *yvec_, *tvec_;
         int sz;
-        (*nrn2core_get_dat2_vecplay_inst_)(
-            thread_id, i, item.vtype, item.mtype, item.ix, sz, yvec_, tvec_,
-            item.last_index, item.discon_index, item.ubound_index);
+        (*nrn2core_get_dat2_vecplay_inst_)(thread_id,
+                                           i,
+                                           item.vtype,
+                                           item.mtype,
+                                           item.ix,
+                                           sz,
+                                           yvec_,
+                                           tvec_,
+                                           item.last_index,
+                                           item.discon_index,
+                                           item.ubound_index);
         item.yvec = IvocVect(sz);
         item.tvec = IvocVect(sz);
         std::copy(yvec_, yvec_ + sz, item.yvec.data());

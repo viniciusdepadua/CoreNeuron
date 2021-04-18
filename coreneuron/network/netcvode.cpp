@@ -86,7 +86,7 @@ void net_send(void** v, int weight_index_, Point_process* pnt, double td, double
     se->target_ = pnt;
     se->weight_index_ = weight_index_;
     if (v >= nt->_vdata) {
-      se->movable_ = v;  // needed for SaveState
+        se->movable_ = v;  // needed for SaveState
     }
     assert(net_cvode_instance);
     ++p.unreffed_event_cnt_;

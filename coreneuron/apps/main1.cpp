@@ -364,7 +364,7 @@ void get_nrn_trajectory_requests(int bsize) {
                 tr->vpr = vpr;
                 tr->gather = new double*[n_trajec];
                 tr->varrays = varrays;
-                 tr->scatter = pvars;
+                tr->scatter = pvars;
                 for (int i = 0; i < n_trajec; ++i) {
                     tr->gather[i] = stdindex2ptr(types[i], indices[i], nt);
                 }
@@ -530,7 +530,7 @@ extern "C" int run_solve_core(int argc, char** argv) {
             // initialization and queue transfer.
             direct_mode_initialize();
             (*nrn2core_part2_clean_)();
-        }else if (!checkpoint_initialize()) {
+        } else if (!checkpoint_initialize()) {
             nrn_finitialize(v != 1000., v);
         }
 
