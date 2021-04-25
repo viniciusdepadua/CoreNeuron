@@ -224,9 +224,8 @@ static void nrn2core_tqueue() {
 
                     case 2: {  // NetCon
                         int ncindex = ncte->intdata[idat++];
-                        printf("ncindex = %d\n", ncindex);
                         NetCon* nc = nt.netcons + ncindex;
-#define DEBUGQUEUE 1
+#define DEBUGQUEUE 0
 #if DEBUGQUEUE
                         printf("nrn2core_tqueue tid=%d i=%zd type=%d tdeliver=%g NetCon %d\n",
                                tid,

@@ -11,7 +11,9 @@
 
 namespace coreneuron {
 
-/** @brief Copies back to NEURON the voltage, i_membrane_, and mechanism data.
+/** @brief Copies back to NEURON everything needed to analyze and continue simulation.
+    I.e. voltage, i_membrane_, mechanism data, event queue, WATCH state,
+    Play state, etc.
  */
 extern void core2nrn_data_return();
 

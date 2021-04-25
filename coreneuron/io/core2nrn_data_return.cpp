@@ -11,6 +11,8 @@
 #include "coreneuron/sim/multicore.hpp"
 #include "coreneuron/nrniv/nrniv_decl.h"
 #include "coreneuron/io/core2nrn_data_return.hpp"
+#include "coreneuron/network/netcvode.hpp"
+#include "coreneuron/utils/vrecitem.h"
 
 /** @brief, Information from NEURON to help with copying data to NEURON.
  *  Info for copying voltage, i_membrane_, and mechanism data.
@@ -88,8 +90,13 @@ static void aos2aos_copy(size_t n, int sz, double* src, double** dest) {
     }
 }
 
+/** @brief Copy event queue and related state back to NEURON.
+*/
+static void core2nrn_tqueue(NrnThread&);
+
 /** @brief copy data back to NEURON.
  *  Copies t, voltage, i_membrane_ if it used, and mechanism param data.
+ *  Copies event queue and related state, e.g. WATCH, VecPlayContinuous.
  */
 void core2nrn_data_return() {
     if (!nrn2core_type_return_) {
@@ -146,7 +153,79 @@ void core2nrn_data_return() {
                 aos2aos_copy(n, sz, cndat, mdata);
             }
         }
+
+        // Copy the event queue and related state.
+        core2nrn_tqueue(nt);
     }
+}
+
+/** @brief Callbacks into NEURON for queue event types.
+ */
+extern "C" {
+ void (*core2nrn_NetCon_event_)(int tid, double tdeliver, size_t nc_index);
+}
+
+static void core2nrn_tqueue_item(TQItem* q, NrnThread& nt) {
+    DiscreteEvent* d = (DiscreteEvent*) q->data_;
+    double td = q->t_;
+
+    switch (d->type()) {
+        case NetConType: {
+            NetCon* nc = (NetCon*) d;
+            assert(nc >= nt.netcons && (nc < (nt.netcons + nt.n_netcon)));
+            size_t nc_index = nc - nt.netcons;
+            (*core2nrn_NetCon_event_)(nt.id, td, nc_index);
+            break;
+        }
+        case SelfEventType: {
+            SelfEvent* se = (SelfEvent*) d;
+printf("SelfEventType %g\n", td);
+            break;
+        }
+        case PreSynType: {
+            PreSyn* ps = (PreSyn*) d;
+printf("PreSynType %g\n", td);
+            break;
+        }
+        case NetParEventType: {
+            // nothing to transfer
+            break;
+        }
+        case PlayRecordEventType: {
+            PlayRecord* pr = ((PlayRecordEvent*) d)->plr_;
+printf("PlayRecordEventType %g\n", td);
+            break;
+        }
+        default: {
+            // In particular, InputPreSyn does not appear in tqueue as it
+            // immediately fans out to NetCon.
+            assert(0);
+            break;
+        }
+    }
+}
+
+void core2nrn_tqueue(NrnThread& nt) {
+    // VecPlayContinuous
+
+    // PatternStim
+
+    // nrn_checkpoint.cpp has:
+    // Avoid extra spikes due to some presyn voltages above threshold
+
+    // The items on the queue
+    NetCvodeThreadData& ntd = net_cvode_instance->p[nt.id];
+    TQueue<QTYPE>* tqe = ntd.tqe_;
+    TQItem* q;
+    // TQItems from atomic_dq
+    while ((q = tqe->atomic_dq(1e20)) != nullptr) {
+        core2nrn_tqueue_item(q, nt);
+    }
+    // TQitems from binq_
+    for (q = tqe->binq_->first(); q; q = tqe->binq_->next(q)) {
+        core2nrn_tqueue_item(q, nt);
+    }
+
 }
 
 }  // namespace coreneuron
