@@ -116,7 +116,7 @@ void setup_nrnthreads_on_device(NrnThread* threads, int nthreads) {
         /* for padding, we have to recompute ne */
         int ne = nrn_soa_padded_size(nt->end, 0);
 
-        dptr = d__data + 0 * ne;
+        dptr = nt->m_managed_storage->rhs_sync_to_device();
         acc_memcpy_to_device(&(d_nt->_actual_rhs), &(dptr), sizeof(double*));
 
         dptr = d__data + 1 * ne;
@@ -592,8 +592,7 @@ void update_nrnthreads_on_host(NrnThread* threads, int nthreads) {
             /* -- copy data to host -- */
 
             int ne = nrn_soa_padded_size(nt->end, 0);
-
-            acc_update_self(nt->_actual_rhs, ne * sizeof(double));
+            nt->m_managed_storage->rhs_sync_to_host();
             acc_update_self(nt->_actual_d, ne * sizeof(double));
             acc_update_self(nt->_actual_a, ne * sizeof(double));
             acc_update_self(nt->_actual_b, ne * sizeof(double));
@@ -690,8 +689,8 @@ void update_nrnthreads_on_device(NrnThread* threads, int nthreads) {
             /* -- copy data to device -- */
 
             int ne = nrn_soa_padded_size(nt->end, 0);
-
-            acc_update_device(nt->_actual_rhs, ne * sizeof(double));
+            nt->m_managed_storage->resize( ne );
+            nt->m_managed_storage->rhs_sync_to_device();
             acc_update_device(nt->_actual_d, ne * sizeof(double));
             acc_update_device(nt->_actual_a, ne * sizeof(double));
             acc_update_device(nt->_actual_b, ne * sizeof(double));
@@ -823,10 +822,11 @@ void update_matrix_from_gpu(NrnThread* _nt) {
         /* RHS and D are contigious, copy them in one go!
          * NOTE: in pragma you have to give actual pointer like below and not nt->rhs...
          */
-        double* rhs = _nt->_actual_rhs;
+        _nt->m_managed_storage->rhs_sync_to_host();
+        double* d = _nt->_actual_d;
         int ne = nrn_soa_padded_size(_nt->end, 0);
 
-        #pragma acc update host(rhs[0 : 2 * ne]) async(_nt->stream_id)
+        #pragma acc update host(d[0 : ne]) async(_nt->stream_id)
         #pragma acc wait(_nt->stream_id)
         // clang-format on
     }
@@ -848,11 +848,11 @@ void update_matrix_to_gpu(NrnThread* _nt) {
          * gpu because nrn_cap_jacob uses rhs which is being updated on GPU
          */
         double* v = _nt->_actual_v;
-        double* rhs = _nt->_actual_rhs;
+        // TODO think about how to allow more async behaviour
+        _nt->m_managed_storage->rhs_sync_to_device();
         int ne = nrn_soa_padded_size(_nt->end, 0);
 
         #pragma acc update device(v[0 : ne]) async(_nt->stream_id)
-        #pragma acc update device(rhs[0 : ne]) async(_nt->stream_id)
         #pragma acc wait(_nt->stream_id)
         // clang-format on
     }

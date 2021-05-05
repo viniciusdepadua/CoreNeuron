@@ -9,10 +9,11 @@
 #include <cstdlib>
 #include <vector>
 
+#include "coreneuron/coreneuron.hpp"
+#include "coreneuron/memory/storage_manager.hpp"
 #include "coreneuron/nrnconf.h"
 #include "coreneuron/sim/multicore.hpp"
 #include "coreneuron/utils/memory.h"
-#include "coreneuron/coreneuron.hpp"
 #include "coreneuron/utils/nrnoc_aux.hpp"
 
 /*
@@ -60,12 +61,21 @@ void (*nrn_mk_transfer_thread_data_)();
 static int table_check_cnt_;
 static ThreadDatum* table_check_;
 
+/**
+ * @brief NrnThread default constructor.
+ * The point of the unique_ptr + interface for the `m_managed_storage` member is
+ * just to insulate the details of the concrete StorageManager type from the
+ * mechanisms built "later" by nrnivmodl on "user" machines.
+ * 
+ * NOTE: consider whether this is a bit too fragile, for example if host-device
+ * data transfer code tries to execute this on the device.
+ */
+NrnThread::NrnThread() : m_managed_storage{std::make_unique<StorageManager>()} {}
 
 void nrn_threads_create(int n) {
     if (nrn_nthread != n) {
         /*printf("sizeof(NrnThread)=%d   sizeof(Memb_list)=%d\n", sizeof(NrnThread),
          * sizeof(Memb_list));*/
-
         nrn_threads = nullptr;
         nrn_nthread = n;
         if (n > 0) {

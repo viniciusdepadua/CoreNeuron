@@ -69,7 +69,7 @@ if(CORENRN_ENABLE_GPU)
     GLOBAL
     PROPERTY
       CORENEURON_LIB_LINK_FLAGS
-      "${PGI_ACC_FLAGS} -rdynamic -lrt -Wl,--whole-archive -L${CMAKE_HOST_SYSTEM_PROCESSOR} -lcorenrnmech -L${CMAKE_INSTALL_PREFIX}/lib -lcoreneuron -lcudacoreneuron -Wl,--no-whole-archive ${CUDA_cudart_static_LIBRARY}"
+      "${PGI_ACC_FLAGS} -rdynamic -lrt -Wl,--whole-archive ${umpire_LIBRARY} -Wl,-rpath,${umpire_LIB_DIR} -L${CMAKE_HOST_SYSTEM_PROCESSOR} -lcorenrnmech -L${CMAKE_INSTALL_PREFIX}/lib -lcoreneuron -lcudacoreneuron -Wl,--no-whole-archive ${CUDA_cudart_static_LIBRARY}"
   )
   set_property(GLOBAL PROPERTY CORENEURON_LIB_FILE_NAMES "libcorenrnmech.a $(libdir)/libcoreneuron.a $(libdir)/libcudacoreneuron.a")
 else()

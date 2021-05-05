@@ -5,16 +5,17 @@
 # See top-level LICENSE file for details.
 # =============================================================================.
 */
-
 #pragma once
 
-#include "coreneuron/nrnconf.h"
-#include "coreneuron/mechanism/membfunc.hpp"
-#include "coreneuron/utils/memory.h"
-#include "coreneuron/mpi/nrnmpi.h"
 #include "coreneuron/io/reports/nrnreport.hpp"
-#include <vector>
+#include "coreneuron/mechanism/membfunc.hpp"
+#include "coreneuron/memory/storage_manager_interface.hpp"
+#include "coreneuron/mpi/nrnmpi.h"
+#include "coreneuron/nrnconf.h"
+#include "coreneuron/utils/memory.h"
+
 #include <memory>
+#include <vector>
 
 namespace coreneuron {
 class NetCon;
@@ -140,6 +141,18 @@ struct NrnThread: public MemoryManaged {
     /* Needed in case there are FOR_NETCON statements in use. */
     std::vector<size_t> _fornetcon_perm_indices; /* displacement like list of indices */
     std::vector<size_t> _fornetcon_weight_perm;  /* permutation indices into weight */
+
+    // This explicitly initialises the `m_managed_storage` member.
+    NrnThread();
+
+    /**
+     * @brief Handle to storage owned by this NrnThread.
+     * This is a handle to a dedicated structure that owns and manages the
+     * storage referred to by members such as `_actual_rhs`. The virtual
+     * interface allows the allocation details of this storage to be hidden from
+     * consumers of the NrnThread class that only care about reading/writing data.
+     */
+    std::unique_ptr<IStorageManager> m_managed_storage;
 };
 
 extern void nrn_threads_create(int n);

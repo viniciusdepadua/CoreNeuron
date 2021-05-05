@@ -43,6 +43,7 @@ MOD_OBJS_DIR = $(OUTPUT_DIR)/corenrn/build
 # Linked libraries gathered by CMake
 LDFLAGS = $(LINKFLAGS) @CORENRN_COMMON_LDFLAGS@
 CORENRNLIB_FLAGS = -L$(CORENRN_LIB_DIR) -lcoreneuron
+CORENRNLIB_FLAGS += $(if @umpire_LIB_DIR@, -W$(subst ;, -W,l,-rpath,@umpire_LIB_DIR@),)
 CORENRNLIB_FLAGS += $(if @reportinglib_LIB_DIR@, -W$(subst ;, -W,l,-rpath,@reportinglib_LIB_DIR@),)
 CORENRNLIB_FLAGS += $(if @sonatareport_LIB_DIR@, -W$(subst ;, -W,l,-rpath,@sonatareport_LIB_DIR@),)
 CORENRNLIB_FLAGS += $(if @caliper_LIB_DIR@, -W$(subst ;, -W,l,-rpath,@caliper_LIB_DIR@),)

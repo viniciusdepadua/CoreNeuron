@@ -104,6 +104,15 @@ set(CN_PROJECT_VERSION ${PROJECT_VERSION})
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/coreneuron/config/config.cpp.in
                ${PROJECT_BINARY_DIR}/coreneuron/config/config.cpp @ONLY)
 
+# This is a hack. Umpire provides targets in the modern CMake style, but it's
+# hard to make [Core]NEURON's CMake handle them. So unpack into the legacy style
+# variables...
+find_package(umpire REQUIRED)
+get_target_property(umpire_LIBRARY umpire LOCATION)
+get_filename_component(umpire_LIB_DIR "${umpire_LIBRARY}" DIRECTORY)
+get_target_property(umpire_INCLUDE_DIR umpire INTERFACE_INCLUDE_DIRECTORIES)
+include_directories(${umpire_INCLUDE_DIR})
+
 # =============================================================================
 # Include cmake modules after cmake options
 # =============================================================================

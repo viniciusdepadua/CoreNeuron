@@ -938,7 +938,9 @@ void Phase2::populate(NrnThread& nt, const UserParams& userParams) {
     // The data format begins with the matrix data
     int n_data_padded = nrn_soa_padded_size(nt.end, MATRIX_LAYOUT);
     nt._data = _data;
-    nt._actual_rhs = nt._data + 0 * n_data_padded;
+    // FIXME: avoid writing `m_managed_storage` here
+    nt.m_managed_storage->resize( n_data_padded );
+    nt._actual_rhs = nt.m_managed_storage->rhs();
     nt._actual_d = nt._data + 1 * n_data_padded;
     nt._actual_a = nt._data + 2 * n_data_padded;
     nt._actual_b = nt._data + 3 * n_data_padded;

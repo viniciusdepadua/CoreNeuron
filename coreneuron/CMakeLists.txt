@@ -162,11 +162,13 @@ add_custom_target(kin_deriv_header DEPENDS "${KINDERIV_HEADER_FILE}")
 # =============================================================================
 # create libraries
 # =============================================================================
+# add_library(coreneuron-allocation SHARED memory/storage_manager.cpp)
+# target_link_libraries(coreneuron-allocation PRIVATE umpire)
 
 # main coreneuron library
 add_library(
   coreneuron ${COMPILE_LIBRARY_TYPE} ${CORENEURON_HEADER_FILES} ${CORENEURON_TEMPLATE_FILES}
-             ${CORENEURON_CODE_FILES} ${cudacorenrn_objs} ${NMODL_INBUILT_MOD_OUTPUTS})
+             ${CORENEURON_CODE_FILES} ${cudacorenrn_objs} ${NMODL_INBUILT_MOD_OUTPUTS} memory/storage_manager.cpp)
 
 # need to have _kinderiv.h for mod2c generated files and nrnivmodl-core and nmodl building
 add_dependencies(coreneuron kin_deriv_header nrnivmodl-core)
@@ -178,6 +180,7 @@ target_link_libraries(
   coreneuron
   ${reportinglib_LIBRARY}
   ${sonatareport_LIBRARY}
+  ${umpire_LIBRARY}
   ${link_cudacoreneuron}
   ${CUDA_LIBRARIES}
   ${CALIPER_LIB}
@@ -233,6 +236,9 @@ file(
   *.h *.hpp *.ispc)
 
 foreach(header ${main_headers})
+  if(${header} STREQUAL "memory/dual_vector.hpp" OR ${header} STREQUAL "memory/storage_manager.hpp")
+    continue()
+  endif()
   configure_file("${header}" "${CMAKE_BINARY_DIR}/include/coreneuron/${header}" COPYONLY)
 endforeach()
 
