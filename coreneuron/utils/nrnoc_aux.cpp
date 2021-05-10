@@ -15,7 +15,7 @@
 #include "coreneuron/utils/nrnoc_aux.hpp"
 
 namespace coreneuron {
-bool stoprun;
+bool volatile stoprun;
 int v_structure_change;
 int diam_changed;
 #define MAXERRCOUNT 5

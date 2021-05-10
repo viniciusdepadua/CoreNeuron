@@ -37,7 +37,7 @@ extern double pi;
 extern double t, dt;
 extern int rev_dt;
 extern int secondorder;
-extern bool stoprun;
+extern bool volatile stoprun;
 extern const char* bbcore_write_version;
 #define tstopbit   (1 << 15)
 #define tstopset   stoprun |= tstopbit

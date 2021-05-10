@@ -12,8 +12,9 @@
  * @brief File containing main driver routine for CoreNeuron
  */
 
-#include <cstring>
 #include <climits>
+#include <cstring>
+#include <csignal>
 #include <memory>
 #include <vector>
 
@@ -114,10 +115,23 @@ char* prepare_args(int& argc, char**& argv, int use_mpi, const char* arg) {
     // return actual data to be freed
     return first;
 }
-}
+
+}  // extern "C"
 
 namespace coreneuron {
+
 void call_prcellstate_for_prcellgid(int prcellgid, int compute_gpu, int is_init);
+
+
+static std::string check_restore() {
+    auto restore_path = corenrn_param.restorepath;
+    const auto auto_chkpt_path = corenrn_param.outpath + "/_corenrn_ckpt";
+    if (restore_path.empty() && fs_isdir(auto_chkpt_path.c_str())) {
+        restore_path = auto_chkpt_path;
+    }
+    return restore_path;
+}
+
 
 void nrn_init_and_load_data(int argc,
                             char* argv[],
@@ -168,7 +182,7 @@ void nrn_init_and_load_data(int argc,
     set_globals(corenrn_param.datpath.c_str(), (corenrn_param.seed >= 0), corenrn_param.seed);
 
     // set global variables for start time, timestep and temperature
-    std::string restore_path = corenrn_param.restorepath;
+    std::string restore_path = check_restore();
     t = restore_time(restore_path.c_str());
 
     if (corenrn_param.dt != -1000.) {  // command line arg highest precedence
@@ -402,6 +416,20 @@ std::unique_ptr<ReportHandler> create_report_handler(ReportConfiguration& config
     return report_handler;
 }
 
+/**
+ * \brief Installs a SIGTERM handler so that we finish the current simulation without losing data
+ * \return True if a checkpoint was performed. False otherwise (not enough elapsed time)
+ */
+static void install_sigterm_handler() {
+    auto sigh = [](int) {
+        std::cerr << "SIGTERM caught! Halting sim and dumping checkpoint" << std::endl;
+        coreneuron::stoprun = true;
+    };
+    if (std::signal(SIGTERM, sigh) == SIG_ERR) {
+        std::cerr << "Could not install SIGTERM handler" << std::endl;
+    }
+}
+
 }  // namespace coreneuron
 
 /// The following high-level functions are marked as "extern C"
@@ -482,6 +510,9 @@ extern "C" int run_solve_core(int argc, char** argv) {
     if (nrnmpi_myid == 0) {
         mkdir_p(output_dir.c_str());
     }
+
+    install_sigterm_handler();
+
 #if NRNMPI
     nrnmpi_barrier();
 #endif

@@ -51,3 +51,13 @@ int mkdir_p(const char* path) {
     delete[] dirpath;
     return 0;
 }
+
+bool fs_exists(const char* path) {
+    struct stat buffer;
+    return (stat(path, &buffer) == 0);
+}
+
+bool fs_isdir(const char* path) {
+    struct stat buffer;
+    return (stat(path, &buffer) == 0 && S_ISDIR(buffer.st_mode));
+}

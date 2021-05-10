@@ -21,4 +21,12 @@
  */
 int mkdir_p(const char* path);
 
+/** @brief Checks an arbitrary path exists
+ */
+bool fs_exists(const char* path);
+
+/** @brief Checks an arbitrary path is an existing directory
+ */
+bool fs_isdir(const char* path);
+
 #endif /* ifndef NRN_FILE_UTILS */

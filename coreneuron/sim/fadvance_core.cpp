@@ -6,6 +6,7 @@
 # =============================================================================.
 */
 
+#include <cstdlib>
 #include <functional>
 
 #include "coreneuron/coreneuron.hpp"
@@ -23,12 +24,19 @@
 #include "coreneuron/utils/progressbar/progressbar.h"
 #include "coreneuron/utils/profile/profiler_interface.h"
 #include "coreneuron/io/nrn2core_direct.h"
+#include "coreneuron/io/nrn_checkpoint.hpp"
+
+// Do an auto checkpoint only if execution lasted longer than this var (secs)
+#define CHECKPOINT_MIN_RUNTIME (4 * 3600)  // 4h
 
 namespace coreneuron {
 
 extern corenrn_parameters corenrn_param;
 static void* nrn_fixed_step_thread(NrnThread*);
 static void* nrn_fixed_step_group_thread(NrnThread*, int, int, int&);
+static bool nrn_auto_checkpoint();
+static time_t sim_start_time;
+
 
 void dt2thread(double adt) { /* copied from nrnoc/fadvance.c */
     if (adt != nrn_threads[0]._dt) {
@@ -109,6 +117,7 @@ void nrn_fixed_single_steps_minimal(int total_sim_steps, double tstop) {
 #endif
         nrn_fixed_step_minimal();
         if (stoprun) {
+            nrn_auto_checkpoint();
             break;
         }
         current_steps++;
@@ -141,6 +150,7 @@ void nrn_fixed_step_group_minimal(int total_sim_steps) {
         nrn_flush_reports(nrn_threads[0]._t);
 #endif
         if (stoprun) {
+            nrn_auto_checkpoint();
             break;
         }
         current_steps++;
@@ -377,4 +387,26 @@ void* nrn_fixed_step_lastpart(NrnThread* nth) {
 
     return nullptr;
 }
+
+/**
+ * \brief Does a checkpoint of the simulation in enough time has passed
+ * \return True if a checkpoint was performed. False otherwise (not enough elapsed time)
+ */
+static bool nrn_auto_checkpoint() {
+    time_t cur_time = time(NULL);
+    int elapsed_secs = difftime(sim_start_time, cur_time);
+    if (elapsed_secs < CHECKPOINT_MIN_RUNTIME) {
+        return false;
+    }
+    // Write to tmp location first because allocated time may not be enough to complete
+    const auto ckpt_tmp = corenrn_param.outpath + "/_corenrn_ckpt_dirty",
+               ckpt_dir = corenrn_param.outpath + "/_corenrn_ckpt";
+    Instrumentor::phase p("Checkpointing");
+    write_checkpoint(nrn_threads, nrn_nthread, ckpt_tmp.c_str());
+    system(("/bin/rm -rf '" + ckpt_dir + "'; " + "/bin/mv '" + ckpt_tmp + "' '" + ckpt_dir + "'")
+               .c_str());
+    return true;
+}
+
+
 }  // namespace coreneuron
