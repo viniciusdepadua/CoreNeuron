@@ -61,6 +61,9 @@ endif()
 # =============================================================================
 # Set global property that will be used by NEURON to link with CoreNEURON
 # =============================================================================
+# These are used when building the `special` binary: CORENEURON_LIB_LINK_FLAGS
+# are passed to the linker, and the build rule for `special` depends on
+# CORENEURON_LIB_FILE_NAMES.
 if(CORENRN_ENABLE_GPU)
   set_property(
     GLOBAL
@@ -68,7 +71,10 @@ if(CORENRN_ENABLE_GPU)
       CORENEURON_LIB_LINK_FLAGS
       "${PGI_ACC_FLAGS} -rdynamic -lrt -Wl,--whole-archive -L${CMAKE_HOST_SYSTEM_PROCESSOR} -lcorenrnmech -L${CMAKE_INSTALL_PREFIX}/lib -lcoreneuron -lcudacoreneuron -Wl,--no-whole-archive ${CUDA_cudart_static_LIBRARY}"
   )
+  set_property(GLOBAL PROPERTY CORENEURON_LIB_FILE_NAMES "libcorenrnmech.a $(libdir)/libcoreneuron.a $(libdir)/libcudacoreneuron.a")
 else()
   set_property(GLOBAL PROPERTY CORENEURON_LIB_LINK_FLAGS
                                "-L${CMAKE_HOST_SYSTEM_PROCESSOR} -lcorenrnmech")
+  # FIXME in case of a non-GPU static build
+  set_property(GLOBAL PROPERTY CORENEURON_LIB_FILE_NAMES "libcorenrnmech.so")
 endif(CORENRN_ENABLE_GPU)
