@@ -91,7 +91,7 @@ static void aos2aos_copy(size_t n, int sz, double* src, double** dest) {
 }
 
 /** @brief Copy event queue and related state back to NEURON.
-*/
+ */
 static void core2nrn_tqueue(NrnThread&);
 
 /** @brief copy data back to NEURON.
@@ -162,12 +162,31 @@ void core2nrn_data_return() {
 /** @brief Callbacks into NEURON for queue event types.
  */
 extern "C" {
- void (*core2nrn_NetCon_event_)(int tid, double tdeliver, size_t nc_index);
+void (*core2nrn_NetCon_event_)(int tid, double td, size_t nc_index);
+
+// must calculate netcon index from the weight index on this side
+void (*core2nrn_SelfEvent_event_)(int tid,
+                                  double td,
+                                  int tar_type,
+                                  int tar_index,
+                                  double flag,
+                                  size_t nc_index,
+                                  int is_movable);
+// the no weight case
+void (*core2nrn_SelfEvent_event_noweight_)(int tid,
+                                           double td,
+                                           int tar_type,
+                                           int tar_index,
+                                           double flag,
+                                           int is_movable);
 }
 
 static void core2nrn_tqueue_item(TQItem* q, NrnThread& nt) {
     DiscreteEvent* d = (DiscreteEvent*) q->data_;
     double td = q->t_;
+
+    // potentially several SelfEvent TQItem* associated with same weight index.
+    std::map<int, std::vector<TQItem*>> self_event_weight_map;
 
     switch (d->type()) {
         case NetConType: {
@@ -179,12 +198,29 @@ static void core2nrn_tqueue_item(TQItem* q, NrnThread& nt) {
         }
         case SelfEventType: {
             SelfEvent* se = (SelfEvent*) d;
-printf("SelfEventType %g\n", td);
+            printf("SelfEventType %g\n", td);
+            int tar_type = se->target_->_type;
+            int tar_index = se->target_ - nt.pntprocs;
+            double flag = se->flag_;
+            TQItem** movable = (TQItem**) (se->movable_);
+            int is_movable = (movable && *movable == q) ? 1 : 0;
+            int weight_index = se->weight_index_;
+            // the weight_index is useless on the NEURON side so we need
+            // to convert that to NetCon index  and let the NEURON side
+            // figure out the weight_index. To figure out the netcon_index
+            // construct a {weight_index : [TQItem]} here for any
+            // weight_index >= 0, otherwise send it NEURON now.
+            if (weight_index >= 0) {
+                self_event_weight_map[weight_index].push_back(q);
+            } else {
+                (*core2nrn_SelfEvent_event_noweight_)(
+                    nt.id, td, tar_type, tar_index, flag, is_movable);
+            }
             break;
         }
         case PreSynType: {
             PreSyn* ps = (PreSyn*) d;
-printf("PreSynType %g\n", td);
+            printf("PreSynType %g\n", td);
             break;
         }
         case NetParEventType: {
@@ -193,7 +229,7 @@ printf("PreSynType %g\n", td);
         }
         case PlayRecordEventType: {
             PlayRecord* pr = ((PlayRecordEvent*) d)->plr_;
-printf("PlayRecordEventType %g\n", td);
+            printf("PlayRecordEventType %g\n", td);
             break;
         }
         default: {
@@ -201,6 +237,32 @@ printf("PlayRecordEventType %g\n", td);
             // immediately fans out to NetCon.
             assert(0);
             break;
+        }
+    }
+
+    // For self events with weight, find the NetCon index and send that
+    // to NEURON.
+    if (!self_event_weight_map.empty()) {
+        for (int nc_index = 0; nc_index < nt.n_netcon; ++nc_index) {
+            NetCon& nc = nt.netcons[nc_index];
+            int weight_index = nc.u.weight_index_;
+            auto search = self_event_weight_map.find(weight_index);
+            if (search != self_event_weight_map.end()) {
+                auto& tqitems = search->second;
+                for (auto q: tqitems) {
+                    DiscreteEvent* d = (DiscreteEvent*) (q->data_);
+                    double td = q->t_;
+                    assert(d->type() == SelfEventType);
+                    SelfEvent* se = (SelfEvent*) d;
+                    int tar_type = se->target_->_type;
+                    int tar_index = se->target_ - nt.pntprocs;
+                    double flag = se->flag_;
+                    TQItem** movable = (TQItem**) (se->movable_);
+                    int is_movable = (movable && *movable == q) ? 1 : 0;
+                    (*core2nrn_SelfEvent_event_)(
+                        nt.id, td, tar_type, tar_index, flag, nc_index, is_movable);
+                }
+            }
         }
     }
 }
@@ -225,7 +287,6 @@ void core2nrn_tqueue(NrnThread& nt) {
     for (q = tqe->binq_->first(); q; q = tqe->binq_->next(q)) {
         core2nrn_tqueue_item(q, nt);
     }
-
 }
 
 }  // namespace coreneuron
