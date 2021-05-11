@@ -18,7 +18,7 @@
 #include <vector>
 #include <set>
 #include <unordered_map>
-#include <stdint.h>
+#include <cstdint>
 
 #define REPORT_MAX_NAME_LEN     256
 #define REPORT_MAX_FILEPATH_LEN 4096
