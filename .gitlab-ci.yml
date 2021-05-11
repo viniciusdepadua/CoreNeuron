@@ -28,9 +28,8 @@ stages:
 emulate:neuron:gpu:
   stage: .pre
   extends:
-    - .spack_build
     - .spack_neuron
     - .spack_nvhpc
   before_script: []
   script:
-    - '/bin/curl' '--stderr' '-' '-s' '-f' '-r' '0-0' 'https://spack-llnl-mirror.s3-us-west-2.amazonaws.com/_source-cache/archive/23/236bdbdce46e6e6a3d61a337c0f8b763ca1e8717c03b369e87a7ec7ce1319c0a.tar.gz'
+    - "'/bin/curl' '--stderr' '-' '-s' '-f' '-r' '0-0' 'https://spack-llnl-mirror.s3-us-west-2.amazonaws.com/_source-cache/archive/23/236bdbdce46e6e6a3d61a337c0f8b763ca1e8717c03b369e87a7ec7ce1319c0a.tar.gz'"
