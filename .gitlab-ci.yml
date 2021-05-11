@@ -26,7 +26,7 @@ stages:
     SPACK_PACKAGE_SPEC: +coreneuron+debug+tests~legacy-unit
 
 emulate:neuron:gpu:
-  stage: .pre
+  stage: build
   extends:
     - .spack_neuron
     - .spack_nvhpc
