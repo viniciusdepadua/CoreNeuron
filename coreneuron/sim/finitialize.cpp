@@ -255,7 +255,10 @@ static void nrn2core_tqueue() {
 
                         // Determine weight_index
                         int netcon_index = ncte->intdata[idat++];  // via the NetCon
-                        int weight_index = nt.netcons[netcon_index].u.weight_index_;
+                        int weight_index = -1; // no associated netcon
+                        if (netcon_index >= 0) {
+                            weight_index = nt.netcons[netcon_index].u.weight_index_;
+                        }
 
                         double flag = ncte->dbldata[idbldat++];
                         int is_movable = ncte->intdata[idat++];

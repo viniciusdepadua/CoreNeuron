@@ -198,7 +198,6 @@ static void core2nrn_tqueue_item(TQItem* q, NrnThread& nt) {
         }
         case SelfEventType: {
             SelfEvent* se = (SelfEvent*) d;
-            printf("SelfEventType %g\n", td);
             int tar_type = se->target_->_type;
             int tar_index = se->target_ - nt.pntprocs;
             double flag = se->flag_;
