@@ -208,8 +208,32 @@ extern "C" {
 NrnCoreTransferEvents* (*nrn2core_transfer_tqueue_)(int tid);
 }
 
+// for faster determination of the movable index given the type
+static std::map<int, int> type2movable;
+static void setup_type2semantics() {
+    if (type2movable.empty()) {
+        for (auto& mf: corenrn.get_memb_funcs()) {
+            size_t n_memb_func = (int) (corenrn.get_memb_funcs().size());
+            for (int type = 0; type < n_memb_func; ++type) {
+                int* ds = corenrn.get_memb_func((size_t) type).dparam_semantics;
+                if (ds) {
+                    int dparam_size = corenrn.get_prop_dparam_size()[type];
+                    for (int psz = 0; psz < dparam_size; ++psz) {
+                        if (ds[psz] == -4) {  // netsend semantics
+                            type2movable[type] = psz;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
 /** Copy each thread's queue from NEURON **/
 static void nrn2core_tqueue() {
+    if (type2movable.empty()) {
+        setup_type2semantics();  // need type2movable for SelfEvent.
+    }
     for (int tid = 0; tid < nrn_nthread; ++tid) {  // should be parallel
         NrnCoreTransferEvents* ncte = (*nrn2core_transfer_tqueue_)(tid);
         if (ncte) {
@@ -255,7 +279,7 @@ static void nrn2core_tqueue() {
 
                         // Determine weight_index
                         int netcon_index = ncte->intdata[idat++];  // via the NetCon
-                        int weight_index = -1; // no associated netcon
+                        int weight_index = -1;                     // no associated netcon
                         if (netcon_index >= 0) {
                             weight_index = nt.netcons[netcon_index].u.weight_index_;
                         }
@@ -266,10 +290,15 @@ static void nrn2core_tqueue() {
                         // stored in the mechanism instance movable slot by net_send.
                         // And don't overwrite if not movable. Only one SelfEvent
                         // for a given target instance is movable.
-                        int movable = -1;
-                        if (is_movable) {
-                        }
-
+                        Memb_list* ml = nt._ml_list[target_type];
+                        int movable_index =
+                            nrn_i_layout(target_instance,
+                                         ml->nodecount,
+                                         type2movable[target_type],
+                                         corenrn.get_prop_dparam_size()[target_type],
+                                         corenrn.get_mech_data_layout()[target_type]);
+                        void** movable_arg = nt._vdata + ml->pdata[movable_index];
+                        TQItem* old_movable_arg = (TQItem*) (*movable_arg);
 #if DEBUGQUEUE
                         printf("nrn2core_tqueue tid=%d i=%zd type=%d tdeliver=%g SelfEvent\n",
                                tid,
@@ -285,7 +314,10 @@ static void nrn2core_tqueue() {
                             is_movable,
                             netcon_index);
 #endif
-                        net_send(nt._vdata + movable, weight_index, pnt, ncte->td[i], flag);
+                        net_send(movable_arg, weight_index, pnt, ncte->td[i], flag);
+                        if (!is_movable) {
+                            *movable_arg = (void*) old_movable_arg;
+                        }
                     } break;
 
                     case 4: {  // PreSyn

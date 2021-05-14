@@ -198,8 +198,10 @@ static void core2nrn_tqueue_item(TQItem* q, NrnThread& nt) {
         }
         case SelfEventType: {
             SelfEvent* se = (SelfEvent*) d;
-            int tar_type = se->target_->_type;
-            int tar_index = se->target_ - nt.pntprocs;
+            Point_process* pnt = se->target_;
+            assert(pnt->_tid == nt.id);
+            int tar_type = (int) pnt->_type;
+            int tar_index = pnt->_i_instance;
             double flag = se->flag_;
             TQItem** movable = (TQItem**) (se->movable_);
             int is_movable = (movable && *movable == q) ? 1 : 0;
