@@ -176,6 +176,13 @@ void direct_mode_initialize() {
     // activate the vec_play_continuous events defined in phase2 setup.
     vec_play_activate();
 
+    // Any PreSyn.flag_ == 1 on the NEURON side needs to be transferred
+    // or the PreSyn will spuriously fire when psolve starts.
+    extern void nrn2core_PreSyn_flag_receive(int tid);
+    for (int tid = 0; tid < nrn_nthread; ++tid) {
+        nrn2core_PreSyn_flag_receive(tid);
+    }
+
     nrn2core_tqueue();
 }
 

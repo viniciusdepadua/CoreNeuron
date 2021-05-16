@@ -179,6 +179,57 @@ void (*core2nrn_SelfEvent_event_noweight_)(int tid,
                                            int tar_index,
                                            double flag,
                                            int is_movable);
+
+// PreSyn.flag_ will be 1 if it has fired and the value it is watching
+// is still greater than threshold. (Note, is 0 no matter what after
+// finitialize so using a set to send back the flag explicitly for any
+// that are 1. Although that is not really relevant in the core2nrn
+// direction. To match up PreSyn on NEURON and CoreNEURON side, we use
+// the (unpermuted) voltage index.
+void (*core2nrn_PreSyn_flag_)(int tid, std::set<int> presyns_flag_true);
+// Receive the PreSyn.flag_ == true voltage indices from the neuron side.
+void (*nrn2core_transfer_PreSyn_flag_)(int tid, std::set<int>& presyns_flag_true);
+}
+
+static void core2nrn_PreSyn_flag(NrnThread& nt) {
+    std::set<int> presyns_flag_true;
+    for (int i = 0; i < nt.n_presyn; ++i) {
+        PreSyn& ps = nt.presyns[i];
+        PreSynHelper& psh = nt.presyns_helper[i];
+        if (psh.flag_ && ps.thvar_index_ >= 0) {
+            int index_v = nt._permute ? nt._permute[ps.thvar_index_] : ps.thvar_index_;
+            presyns_flag_true.insert(index_v);
+        }
+    }
+    // have to send even if empty so NEURON side can turn off all flag_
+    (*core2nrn_PreSyn_flag_)(nt.id, presyns_flag_true);
+}
+
+void nrn2core_PreSyn_flag_receive(int tid) {
+    NrnThread& nt = nrn_threads[tid];
+    // turn off all the PreSyn.flag_ as they might have been turned off
+    // on the NEURON side if NEURON integrated a bit.
+    for (int i = 0; i < nt.n_presyn; ++i) {
+        nt.presyns_helper[i].flag_ = 0;  // in case 1 from previous psolve
+    }
+    std::set<int> presyns_flag_true;
+    (*nrn2core_transfer_PreSyn_flag_)(tid, presyns_flag_true);
+    if (presyns_flag_true.empty()) {
+        return;
+    }
+    for (int i = 0; i < nt.n_presyn; ++i) {
+        PreSyn& ps = nt.presyns[i];
+        PreSynHelper& psh = nt.presyns_helper[i];
+        if (ps.thvar_index_ >= 0) {
+            int index_v = nt._permute ? nt._permute[ps.thvar_index_] : ps.thvar_index_;
+            if (presyns_flag_true.erase(index_v)) {
+                psh.flag_ = 1;
+                if (presyns_flag_true.empty()) {
+                    break;
+                }
+            }
+        }
+    }
 }
 
 static void core2nrn_tqueue_item(TQItem* q, NrnThread& nt) {
@@ -275,6 +326,9 @@ void core2nrn_tqueue(NrnThread& nt) {
 
     // nrn_checkpoint.cpp has:
     // Avoid extra spikes due to some presyn voltages above threshold
+
+    // PreSyn.flag_ that are on
+    core2nrn_PreSyn_flag(nt);
 
     // The items on the queue
     NetCvodeThreadData& ntd = net_cvode_instance->p[nt.id];
