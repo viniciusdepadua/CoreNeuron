@@ -45,10 +45,10 @@ list(APPEND CMAKE_MODULE_PATH ${CORENEURON_PROJECT_SOURCE_DIR}/CMake
 set(CODING_CONV_PREFIX "CORENRN")
 set(CORENRN_3RDPARTY_DIR "external")
 set(CORENRN_ClangFormat_EXCLUDES_RE
-    ".*/external/.*$$"
+    "${CORENRN_PROJECT_SOURCE_DIR}/external/.*$$"
     CACHE STRING "list of regular expressions to exclude C/C++ files from formatting" FORCE)
 set(CORENRN_CMakeFormat_EXCLUDES_RE
-    ".*/external/.*$$" ".*/CMake/packages/.*$$"
+    "${CORENRN_PROJECT_SOURCE_DIR}/external/.*$$" ".*/CMake/packages/.*$$"
     CACHE STRING "list of regular expressions to exclude CMake files from formatting" FORCE)
 include(AddHpcCodingConvSubmodule)
 add_subdirectory(CMake/hpc-coding-conventions/cpp)
@@ -130,7 +130,7 @@ endif()
 # =============================================================================
 # Build option specific compiler flags
 # =============================================================================
-if(${CMAKE_CXX_COMPILER_ID} STREQUAL "PGI")
+if(${CMAKE_CXX_COMPILER_ID} STREQUAL "PGI" OR ${CMAKE_CXX_COMPILER_ID} STREQUAL "NVHPC")
   # PGI with llvm code generation doesn't have necessary assembly intrinsic headers
   add_definitions(-DEIGEN_DONT_VECTORIZE=1)
 endif()
@@ -285,9 +285,6 @@ if(CORENRN_ENABLE_CALIPER_PROFILING)
   include_directories(${caliper_INCLUDE_DIR})
   add_definitions("-DCORENEURON_CALIPER")
   set(CALIPER_LIB "caliper")
-  if(CORENRN_ENABLE_MPI)
-    set(CALIPER_MPI_LIB "caliper-mpi")
-  endif()
 endif()
 
 if(CORENRN_ENABLE_LIKWID_PROFILING)
