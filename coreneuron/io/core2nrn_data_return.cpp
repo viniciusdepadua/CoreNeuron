@@ -12,6 +12,7 @@
 #include "coreneuron/nrniv/nrniv_decl.h"
 #include "coreneuron/io/core2nrn_data_return.hpp"
 #include "coreneuron/network/netcvode.hpp"
+#include "coreneuron/permute/node_permute.h"
 #include "coreneuron/utils/vrecitem.h"
 
 /** @brief, Information from NEURON to help with copying data to NEURON.
@@ -193,13 +194,20 @@ void (*nrn2core_transfer_PreSyn_flag_)(int tid, std::set<int>& presyns_flag_true
 
 static void core2nrn_PreSyn_flag(NrnThread& nt) {
     std::set<int> presyns_flag_true;
+    int* pinv_nt = nullptr;
+    if (nt._permute) {
+        pinv_nt = inverse_permute(nt._permute, nt.end);
+    }
     for (int i = 0; i < nt.n_presyn; ++i) {
         PreSyn& ps = nt.presyns[i];
         PreSynHelper& psh = nt.presyns_helper[i];
         if (psh.flag_ && ps.thvar_index_ >= 0) {
-            int index_v = nt._permute ? nt._permute[ps.thvar_index_] : ps.thvar_index_;
+            int index_v = pinv_nt ? pinv_nt[ps.thvar_index_] : ps.thvar_index_;
             presyns_flag_true.insert(index_v);
         }
+    }
+    if (pinv_nt) {
+      delete [] pinv_nt;
     }
     // have to send even if empty so NEURON side can turn off all flag_
     (*core2nrn_PreSyn_flag_)(nt.id, presyns_flag_true);
@@ -217,11 +225,15 @@ void nrn2core_PreSyn_flag_receive(int tid) {
     if (presyns_flag_true.empty()) {
         return;
     }
+    int* pinv_nt = nullptr;
+    if (nt._permute) {
+        pinv_nt = inverse_permute(nt._permute, nt.end);
+    }
     for (int i = 0; i < nt.n_presyn; ++i) {
         PreSyn& ps = nt.presyns[i];
         PreSynHelper& psh = nt.presyns_helper[i];
         if (ps.thvar_index_ >= 0) {
-            int index_v = nt._permute ? nt._permute[ps.thvar_index_] : ps.thvar_index_;
+            int index_v = pinv_nt ? pinv_nt[ps.thvar_index_] : ps.thvar_index_;
             if (presyns_flag_true.erase(index_v)) {
                 psh.flag_ = 1;
                 if (presyns_flag_true.empty()) {
@@ -229,6 +241,9 @@ void nrn2core_PreSyn_flag_receive(int tid) {
                 }
             }
         }
+    }
+    if (pinv_nt) {
+      delete [] pinv_nt;
     }
 }
 
