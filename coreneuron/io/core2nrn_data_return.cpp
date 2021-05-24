@@ -14,6 +14,7 @@
 #include "coreneuron/network/netcvode.hpp"
 #include "coreneuron/permute/node_permute.h"
 #include "coreneuron/utils/vrecitem.h"
+#include "coreneuron/io/mem_layout_util.hpp"
 
 /** @brief, Information from NEURON to help with copying data to NEURON.
  *  Info for copying voltage, i_membrane_, and mechanism data.
@@ -23,6 +24,20 @@
  *  of pointers in mdata. tid is the thread index.
  */
 size_t (*nrn2core_type_return_)(int type, int tid, double*& data, double**& mdata);
+
+/** @brief, Call NEURON mechanism bbcore_read.
+ *  Inverse of bbcore_write for transfer from NEURON to CoreNEURON.
+ *  Mostly for transferring back the nrnran123_State sequence so psolve can
+ *  continue on NEURON side (or continue psolve on CoreNEURON).
+ */
+extern "C" {
+int (*core2nrn_corepointer_mech_)(int tid,
+                                  int type,
+                                  int icnt,
+                                  int dcnt,
+                                  int* iArray,
+                                  double* dArray);
+}
 
 namespace coreneuron {
 
@@ -91,6 +106,70 @@ static void aos2aos_copy(size_t n, int sz, double* src, double** dest) {
     }
 }
 
+/** @brief Copy back COREPOINTER info to NEURON
+ */
+static void core2nrn_corepointer(int tid, NrnThreadMembList* tml) {
+    // Based on get_bbcore_write fragment in nrn_checkpoint.cpp
+    int type = tml->index;
+    if (!corenrn.get_bbcore_write()[type]) {
+        return;
+    }
+    NrnThread& nt = nrn_threads[tid];
+    Memb_list* ml = tml->ml;
+    double* d = nullptr;
+    Datum* pd = nullptr;
+    int layout = corenrn.get_mech_data_layout()[type];
+    int dsz = corenrn.get_prop_param_size()[type];
+    int pdsz = corenrn.get_prop_dparam_size()[type];
+    int aln_cntml = nrn_soa_padded_size(ml->nodecount, layout);
+
+    int icnt = 0;
+    int dcnt = 0;
+    // data size and allocate
+    for (int j = 0; j < ml->nodecount; ++j) {
+        int jp = j;
+        if (ml->_permute) {
+            jp = ml->_permute[j];
+        }
+        d = ml->data + nrn_i_layout(jp, ml->nodecount, 0, dsz, layout);
+        pd = ml->pdata + nrn_i_layout(jp, ml->nodecount, 0, pdsz, layout);
+        (*corenrn.get_bbcore_write()[type])(
+            nullptr, nullptr, &dcnt, &icnt, 0, aln_cntml, d, pd, ml->_thread, &nt, 0.0);
+    }
+
+    int* iArray = nullptr;
+    double* dArray = nullptr;
+    if (icnt) {
+        iArray = new int[icnt];
+    }
+    if (dcnt) {
+        dArray = new double[dcnt];
+    }
+    icnt = dcnt = 0;
+    for (int j = 0; j < ml->nodecount; j++) {
+        int jp = j;
+
+        if (ml->_permute) {
+            jp = ml->_permute[j];
+        }
+
+        d = ml->data + nrn_i_layout(jp, ml->nodecount, 0, dsz, layout);
+        pd = ml->pdata + nrn_i_layout(jp, ml->nodecount, 0, pdsz, layout);
+
+        (*corenrn.get_bbcore_write()[type])(
+            dArray, iArray, &dcnt, &icnt, 0, aln_cntml, d, pd, ml->_thread, &nt, 0.0);
+    }
+
+    (*core2nrn_corepointer_mech_)(tid, type, icnt, dcnt, iArray, dArray);
+
+    if (iArray) {
+        delete[] iArray;
+    }
+    if (dArray) {
+        delete[] dArray;
+    }
+}
+
 /** @brief Copy event queue and related state back to NEURON.
  */
 static void core2nrn_tqueue(NrnThread&);
@@ -153,6 +232,8 @@ void core2nrn_data_return() {
             } else { /* AoS */
                 aos2aos_copy(n, sz, cndat, mdata);
             }
+
+            core2nrn_corepointer(tid, tml);
         }
 
         // Copy the event queue and related state.
@@ -207,7 +288,7 @@ static void core2nrn_PreSyn_flag(NrnThread& nt) {
         }
     }
     if (pinv_nt) {
-      delete [] pinv_nt;
+        delete[] pinv_nt;
     }
     // have to send even if empty so NEURON side can turn off all flag_
     (*core2nrn_PreSyn_flag_)(nt.id, presyns_flag_true);
@@ -243,7 +324,7 @@ void nrn2core_PreSyn_flag_receive(int tid) {
         }
     }
     if (pinv_nt) {
-      delete [] pinv_nt;
+        delete[] pinv_nt;
     }
 }
 
