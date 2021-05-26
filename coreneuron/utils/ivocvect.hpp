@@ -67,15 +67,6 @@ class fixed_vector {
 
 using IvocVect = fixed_vector<double>;
 
-extern IvocVect* vector_new(int n);
-extern int vector_capacity(IvocVect* v);
-extern double* vector_vec(IvocVect* v);
-
-// retro-compatibility API
-extern void* vector_new1(int n);
-extern int vector_capacity(void* v);
-extern double* vector_vec(void* v);
-
 }  // namespace coreneuron
 
 #endif
