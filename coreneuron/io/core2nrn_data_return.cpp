@@ -178,7 +178,7 @@ static void core2nrn_tqueue(NrnThread&);
  */
 // vector in unpermuted Memb_list index order of vector of
 // activated watch_index.
-typedef std::vector<std::vector<int> > Core2NrnWatchInfo;
+typedef std::vector<std::vector<int>> Core2NrnWatchInfo;
 extern "C" {
 void (*core2nrn_watch_clear_)();
 void (*core2nrn_watch_activate_)(int tid, int type, int watch_begin, Core2NrnWatchInfo&);
@@ -272,7 +272,7 @@ static void core2nrn_watch() {
                 int nodecount = ml.nodecount;
                 Core2NrnWatchInfo watch_info(ml.nodecount);
                 int* permute = ml._permute;
-                int* pdata = (int*)ml.pdata;
+                int* pdata = (int*) ml.pdata;
                 int dparam_size = corenrn.get_prop_dparam_size()[type];
                 int layout = corenrn.get_mech_data_layout()[type];
                 int first, last;
@@ -283,7 +283,7 @@ static void core2nrn_watch() {
                     std::vector<int>& wiv = watch_info[iml_permute];
                     for (int ix = first; ix <= last; ++ix) {
                         int datum = pdata[nrn_i_layout(iml, nodecount, ix, dparam_size, layout)];
-                        if (datum&2) { // activated
+                        if (datum & 2) {  // activated
                             // if the assert fails then perhaps need to
                             // revisit the line in nrn/.../nrncore_callbacks.cpp
                             // wc->flag_ = false; // this is a mystery
