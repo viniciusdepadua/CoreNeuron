@@ -174,6 +174,17 @@ static void core2nrn_corepointer(int tid, NrnThreadMembList* tml) {
  */
 static void core2nrn_tqueue(NrnThread&);
 
+/** @brief All activated WATCH statements need activation on NEURON side.
+ */
+// vector in unpermuted Memb_list index order of vector of
+// activated watch_index.
+typedef std::vector<std::vector<int> > Core2NrnWatchInfo;
+extern "C" {
+void (*core2nrn_watch_clear_)();
+void (*core2nrn_watch_activate_)(int tid, int type, int watch_begin, Core2NrnWatchInfo&);
+}
+static void core2nrn_watch();
+
 /** @brief copy data back to NEURON.
  *  Copies t, voltage, i_membrane_ if it used, and mechanism param data.
  *  Copies event queue and related state, e.g. WATCH, VecPlayContinuous.
@@ -239,7 +250,54 @@ void core2nrn_data_return() {
         // Copy the event queue and related state.
         core2nrn_tqueue(nt);
     }
+    core2nrn_watch();
 }
+
+/** @brief Callbacks into NEURON for WatchCondition.
+ */
+
+static void core2nrn_watch() {
+    (*core2nrn_watch_clear_)();
+
+    // much of the following nested iterations follows the
+    // watch_activate_clear() function in sim/finitialize.cpp, though here
+    // we iterate over nt._watch_types instead of nt.tml and then picking out
+    // the WATCH relevant types with corenrn.get_watch_check().
+    for (int tid = 0; tid < nrn_nthread; ++tid) {
+        NrnThread& nt = nrn_threads[tid];
+        if (nt._watch_types) {
+            for (int i = 0; nt._watch_types[i] != 0; ++i) {
+                int type = nt._watch_types[i];
+                Memb_list& ml = *(nt._ml_list[type]);
+                int nodecount = ml.nodecount;
+                Core2NrnWatchInfo watch_info(ml.nodecount);
+                int* permute = ml._permute;
+                int* pdata = (int*)ml.pdata;
+                int dparam_size = corenrn.get_prop_dparam_size()[type];
+                int layout = corenrn.get_mech_data_layout()[type];
+                int first, last;
+                watch_datum_indices(type, first, last);
+                int watch_begin = first;
+                for (int iml = 0; iml < nodecount; ++iml) {
+                    int iml_permute = permute ? permute[iml] : iml;
+                    std::vector<int>& wiv = watch_info[iml_permute];
+                    for (int ix = first; ix <= last; ++ix) {
+                        int datum = pdata[nrn_i_layout(iml, nodecount, ix, dparam_size, layout)];
+                        if (datum&2) { // activated
+                            // if the assert fails then perhaps need to
+                            // revisit the line in nrn/.../nrncore_callbacks.cpp
+                            // wc->flag_ = false; // this is a mystery
+                            assert(datum == 2);
+                            wiv.push_back(ix);
+                        }
+                    }
+                }
+                (*core2nrn_watch_activate_)(tid, type, watch_begin, watch_info);
+            }
+        }
+    }
+}
+
 
 /** @brief Callbacks into NEURON for queue event types.
  */

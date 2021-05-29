@@ -16,6 +16,7 @@
 #include "coreneuron/utils/nrnoc_aux.hpp"
 #include "coreneuron/io/mem_layout_util.hpp"  // for WATCH use of nrn_i_layout
 #include "coreneuron/utils/vrecitem.h"
+#include "coreneuron/io/core2nrn_data_return.hpp"
 
 namespace coreneuron {
 
@@ -371,6 +372,25 @@ static void nrn2core_tqueue() {
     }
 }
 
+/** @brief return first and last datum indices of WATCH statements
+ */
+void watch_datum_indices(int type, int& first, int& last) {
+    int* semantics = corenrn.get_memb_func(type).dparam_semantics;
+    int dparam_size = corenrn.get_prop_dparam_size()[type];
+    // which slots are WATCH
+    // Note that first is the WatchList item, not the WatchCondition
+    first = -1;
+    last = 0;
+    for (int i = 0; i < dparam_size; ++i) {
+        if (semantics[i] == -8) {  // WATCH
+            if (first == -1) {
+                first = i;
+            }
+            last = i;
+        }
+    }
+}
+
 void watch_activate_clear() {
     // Can identify mechanisms with WATCH statements from non-NULL
     // corenrn.get_watch_check()[type] and figure out pdata that are
@@ -391,16 +411,8 @@ void watch_activate_clear() {
                 int* semantics = corenrn.get_memb_func(type).dparam_semantics;
                 int dparam_size = corenrn.get_prop_dparam_size()[type];
                 // which slots are WATCH
-                int first = -1;
-                int last = 0;
-                for (int i = 0; i < dparam_size; ++i) {
-                    if (semantics[i] == -8) {  // WATCH
-                        if (first == -1) {
-                            first = i;
-                        }
-                        last = i;
-                    }
-                }
+                int first, last;
+                watch_datum_indices(type, first, last);
                 // Zero the _watch_array from first to last inclusive.
                 // Note: the first is actually unused but is there because NEURON
                 // uses it. There is probably a better way to do this.
@@ -424,12 +436,6 @@ void nrn2core_transfer_watch_condition(int tid,
                                        int watch_index,
                                        int triggered) {
     // Note: watch_index relative to AoS _ppvar for instance.
-    printf("CoreNEURON WatchCondition tid=%d type=%d index=%d watch_index=%d triggered=%d\n",
-           tid,
-           pnttype,
-           pntindex,
-           watch_index,
-           triggered);
     NrnThread& nt = nrn_threads[tid];
     int pntoffset = nt._pnt_offset[pnttype];
     Point_process* pnt = nt.pntprocs + (pntoffset + pntindex);
