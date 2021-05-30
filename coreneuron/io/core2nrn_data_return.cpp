@@ -185,6 +185,13 @@ void (*core2nrn_watch_activate_)(int tid, int type, int watch_begin, Core2NrnWat
 }
 static void core2nrn_watch();
 
+/** @brief VecPlay indices back to NEURON */
+extern "C" {
+void (*core2nrn_vecplay_)(int tid, int i_nrn, int last, int discon, int ubound);
+void (*core2nrn_vecplay_events_)();
+}
+static void core2nrn_vecplay();
+
 /** @brief copy data back to NEURON.
  *  Copies t, voltage, i_membrane_ if it used, and mechanism param data.
  *  Copies event queue and related state, e.g. WATCH, VecPlayContinuous.
@@ -250,12 +257,12 @@ void core2nrn_data_return() {
         // Copy the event queue and related state.
         core2nrn_tqueue(nt);
     }
+    core2nrn_vecplay();
     core2nrn_watch();
 }
 
 /** @brief Callbacks into NEURON for WatchCondition.
  */
-
 static void core2nrn_watch() {
     (*core2nrn_watch_clear_)();
 
@@ -298,6 +305,27 @@ static void core2nrn_watch() {
     }
 }
 
+/** @brief Transfer VecPlay indices to NEURON.
+ */
+void core2nrn_vecplay() {
+    for (int tid = 0; tid < nrn_nthread; ++tid) {
+        NrnThread& nt = nrn_threads[tid];
+        std::vector<int> i_nrn;
+        int ok = (*nrn2core_get_dat2_vecplay_)(tid, i_nrn);
+        if (nt.n_vecplay) {
+            assert(ok);
+        }
+        for (int i = 0; i < nt.n_vecplay; ++i) {
+            VecPlayContinuous& vp = *((VecPlayContinuous*) nt._vecplay[i]);
+            (*core2nrn_vecplay_)(tid,
+                                 i_nrn[i],
+                                 (int) vp.last_index_,
+                                 (int) vp.discon_index_,
+                                 (int) vp.ubound_index_);
+        }
+    }
+    (*core2nrn_vecplay_events_)();
+}
 
 /** @brief Callbacks into NEURON for queue event types.
  */
@@ -434,8 +462,7 @@ static void core2nrn_tqueue_item(TQItem* q, NrnThread& nt) {
             break;
         }
         case PlayRecordEventType: {
-            PlayRecord* pr = ((PlayRecordEvent*) d)->plr_;
-            printf("PlayRecordEventType %g\n", td);
+            // nothing to transfer
             break;
         }
         default: {
