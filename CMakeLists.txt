@@ -88,6 +88,9 @@ option(CORENRN_ENABLE_GPU "Enable GPU support using OpenACC" OFF)
 option(CORENRN_ENABLE_SHARED "Enable shared library build" ON)
 option(CORENRN_ENABLE_LEGACY_UNITS "Enable legacy FARADAY, R, etc" OFF)
 
+set(CORENRN_GPU_CUDA_COMPUTE_CAPABILITY
+    "60" "70"
+    CACHE STRING "List of CUDA compute capabilities to compile CUDA/OpenACC for")
 set(CORENRN_NMODL_DIR
     ""
     CACHE PATH "Path to nmodl source-to-source compiler installation")
@@ -130,7 +133,7 @@ endif()
 # =============================================================================
 # Build option specific compiler flags
 # =============================================================================
-if(${CMAKE_CXX_COMPILER_ID} STREQUAL "PGI")
+if(${CMAKE_CXX_COMPILER_ID} STREQUAL "PGI" OR ${CMAKE_CXX_COMPILER_ID} STREQUAL "NVHPC")
   # PGI with llvm code generation doesn't have necessary assembly intrinsic headers
   add_definitions(-DEIGEN_DONT_VECTORIZE=1)
 endif()
