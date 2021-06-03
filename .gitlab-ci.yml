@@ -49,8 +49,8 @@ build:nmodl:intel:
     SPACK_PACKAGE: nmodl
     SPACK_PACKAGE_SPEC: ~legacy-unit
   extends:
-    - .spack-build
-    - .spack-intel
+    - .spack_build
+    - .spack_intel
 
 build:coreneuron+nmodl:intel:
   variables:
