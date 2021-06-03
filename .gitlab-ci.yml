@@ -6,6 +6,7 @@ include:
 
 stages:
     - .pre
+    - build_nmodl
     - build
     - test
     - build_neuron
@@ -45,6 +46,7 @@ spack_setup:
     SPACK_PACKAGE_SPEC: +coreneuron+debug+tests~legacy-unit
 
 build:nmodl:intel:
+  stage: build_nmodl
   variables:
     SPACK_PACKAGE: nmodl
     SPACK_PACKAGE_SPEC: ~legacy-unit
