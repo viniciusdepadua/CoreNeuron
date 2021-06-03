@@ -47,6 +47,10 @@ spack_setup:
 build:nmodl:intel:
   variables:
     SPACK_PACKAGE: nmodl
+    SPACK_PACKAGE_SPEC: ~legacy-unit
+  extends:
+    - .spack-build
+    - .spack-intel
 
 build:coreneuron+nmodl:intel:
   variables:
