@@ -49,6 +49,7 @@ build:nmodl:intel:
   stage: build_nmodl
   variables:
     SPACK_PACKAGE: nmodl
+    SPACK_PACKAGE_REF: ''
     SPACK_PACKAGE_SPEC: ~legacy-unit
   extends:
     - .spack_build
