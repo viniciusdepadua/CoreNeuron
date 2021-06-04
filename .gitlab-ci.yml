@@ -50,7 +50,7 @@ build:nmodl:intel:
   variables:
     SPACK_PACKAGE: nmodl
     SPACK_PACKAGE_REF: ''
-    SPACK_PACKAGE_SPEC: ~legacy-unit
+    SPACK_PACKAGE_SPEC: ~legacy-unit~python
   extends:
     - .spack_build
     - .spack_intel
@@ -60,7 +60,7 @@ build:nmodl:gpu:
   variables:
     SPACK_PACKAGE: nmodl
     SPACK_PACKAGE_REF: ''
-    SPACK_PACKAGE_SPEC: ~legacy-unit
+    SPACK_PACKAGE_SPEC: ~legacy-unit~python
   extends:
     - .spack_build
     - .spack_nvhpc
