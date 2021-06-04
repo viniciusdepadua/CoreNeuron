@@ -3,6 +3,8 @@ include:
     file:
       - spack-build-components.gitlab-ci.yml
       - github-project-pipelines.gitlab-ci.yml
+  - project: hpc/gitlab-upload-logs
+    file: enable-upload.yml
 
 stages:
     - .pre
@@ -50,7 +52,7 @@ build:nmodl:intel:
   variables:
     SPACK_PACKAGE: nmodl
     SPACK_PACKAGE_REF: ''
-    SPACK_PACKAGE_SPEC: ~legacy-unit~python
+    SPACK_PACKAGE_SPEC: ~legacy-unit
   extends:
     - .spack_build
     - .spack_intel
@@ -60,7 +62,7 @@ build:nmodl:gpu:
   variables:
     SPACK_PACKAGE: nmodl
     SPACK_PACKAGE_REF: ''
-    SPACK_PACKAGE_SPEC: ~legacy-unit~python
+    SPACK_PACKAGE_SPEC: ~legacy-unit
     SPACK_PACKAGE_DEPENDENCIES: ^py-pyyaml%gcc
   extends:
     - .spack_build
