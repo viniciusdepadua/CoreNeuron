@@ -63,7 +63,7 @@ build:nmodl:gpu:
     SPACK_PACKAGE: nmodl
     SPACK_PACKAGE_REF: ''
     SPACK_PACKAGE_SPEC: ~legacy-unit
-    SPACK_PACKAGE_DEPENDENCIES: ^py-pyyaml%gcc
+    SPACK_PACKAGE_DEPENDENCIES: ^bison%gcc^flex%gcc^py-jinja2%gcc^py-sympy%gcc^py-pyyaml@gcc
   extends:
     - .spack_build
     - .spack_nvhpc
