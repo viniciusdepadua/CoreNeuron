@@ -108,6 +108,7 @@ static void nrn2core_tqueue();
 static void watch_activate_clear();
 static void nrn2core_transfer_watch_condition(int, int, int, int, int);
 static void vec_play_activate();
+static void nrn2core_patstim_share_info();
 
 extern "C" {
 /** Pointer to function in NEURON that iterates over activated
@@ -183,6 +184,8 @@ void direct_mode_initialize() {
     for (int tid = 0; tid < nrn_nthread; ++tid) {
         nrn2core_PreSyn_flag_receive(tid);
     }
+
+    nrn2core_patstim_share_info();
 
     nrn2core_tqueue();
 }
@@ -464,5 +467,57 @@ void nrn2core_transfer_watch_condition(int tid,
     // activate the WatchCondition
     *pd = 2 + triggered;
 }
+
+// PatternStim direct mode
+// NEURON and CoreNEURON had different definitions for struct Info but
+// the NEURON version of pattern.mod for PatternStim was changed to
+// adopt the CoreNEURON version (along with THREADSAFE so they have the
+// same param size). So they now both share the same
+// instance of Info and NEURON is responsible for constructor/destructor.
+// And in direct mode, PatternStim gets no special treatment except that
+// on the CoreNEURON side, the Info struct points to the NEURON instance.
+
+// from patstim.mod
+extern void** pattern_stim_info_ref(int icnt,
+                                    int cnt,
+                                    double* _p,
+                                    Datum* _ppvar,
+                                    ThreadDatum* _thread,
+                                    NrnThread* _nt,
+                                    double v);
+
+extern "C" {
+void (*nrn2core_patternstim_)(void** info);
+}
+
+// In direct mode, CoreNEURON and NEURON share the same PatternStim Info
+// Assume singleton for PatternStim but that is not really necessary in principle.
+void nrn2core_patstim_share_info() {
+    int type = nrn_get_mechtype("PatternStim");
+    NrnThread* nt = nrn_threads + 0;
+    Memb_list* ml = nt->_ml_list[type];
+    if (ml) {
+        int layout = corenrn.get_mech_data_layout()[type];
+        int sz = corenrn.get_prop_param_size()[type];
+        int psz = corenrn.get_prop_dparam_size()[type];
+        int _cntml = ml->nodecount;
+        assert(ml->nodecount == 1);
+        int _iml = 0;  // Assume singleton here and in (*nrn2core_patternstim_)(info) below.
+        double* _p = ml->data;
+        Datum* _ppvar = ml->pdata;
+        if (layout == Layout::AoS) {
+            _p += _iml * sz;
+            _ppvar += _iml * psz;
+        } else if (layout == Layout::SoA) {
+            ;
+        } else {
+            assert(0);
+        }
+
+        void** info = pattern_stim_info_ref(_iml, _cntml, _p, _ppvar, nullptr, nt, 0.0);
+        (*nrn2core_patternstim_)(info);
+    }
+}
+
 
 }  // namespace coreneuron
