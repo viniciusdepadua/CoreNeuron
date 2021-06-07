@@ -161,7 +161,6 @@ static void core2nrn_corepointer(int tid, NrnThreadMembList* tml) {
     }
 
     (*core2nrn_corepointer_mech_)(tid, type, icnt, dcnt, iArray.get(), dArray.get());
-
 }
 
 /** @brief Copy event queue and related state back to NEURON.
