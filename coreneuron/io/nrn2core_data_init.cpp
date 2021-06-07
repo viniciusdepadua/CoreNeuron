@@ -137,7 +137,7 @@ NrnCoreTransferEvents* (*nrn2core_transfer_tqueue_)(int tid);
 }
 
 // for faster determination of the movable index given the type
-static std::map<int, int> type2movable;
+static std::unordered_map<int, int> type2movable;
 static void setup_type2semantics() {
     if (type2movable.empty()) {
         for (auto& mf: corenrn.get_memb_funcs()) {

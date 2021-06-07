@@ -137,13 +137,13 @@ static void core2nrn_corepointer(int tid, NrnThreadMembList* tml) {
             nullptr, nullptr, &dcnt, &icnt, 0, aln_cntml, d, pd, ml->_thread, &nt, 0.0);
     }
 
-    int* iArray = nullptr;
-    double* dArray = nullptr;
+    std::unique_ptr<int[]> iArray;
+    std::unique_ptr<double[]> dArray;
     if (icnt) {
-        iArray = new int[icnt];
+        iArray.reset(new int[icnt]);
     }
     if (dcnt) {
-        dArray = new double[dcnt];
+        dArray.reset(new double[dcnt]);
     }
     icnt = dcnt = 0;
     for (int j = 0; j < ml->nodecount; j++) {
@@ -157,17 +157,11 @@ static void core2nrn_corepointer(int tid, NrnThreadMembList* tml) {
         pd = ml->pdata + nrn_i_layout(jp, ml->nodecount, 0, pdsz, layout);
 
         (*corenrn.get_bbcore_write()[type])(
-            dArray, iArray, &dcnt, &icnt, 0, aln_cntml, d, pd, ml->_thread, &nt, 0.0);
+            dArray.get(), iArray.get(), &dcnt, &icnt, 0, aln_cntml, d, pd, ml->_thread, &nt, 0.0);
     }
 
-    (*core2nrn_corepointer_mech_)(tid, type, icnt, dcnt, iArray, dArray);
+    (*core2nrn_corepointer_mech_)(tid, type, icnt, dcnt, iArray.get(), dArray.get());
 
-    if (iArray) {
-        delete[] iArray;
-    }
-    if (dArray) {
-        delete[] dArray;
-    }
 }
 
 /** @brief Copy event queue and related state back to NEURON.
@@ -361,9 +355,9 @@ void (*nrn2core_transfer_PreSyn_flag_)(int tid, std::set<int>& presyns_flag_true
 
 static void core2nrn_PreSyn_flag(NrnThread& nt) {
     std::set<int> presyns_flag_true;
-    int* pinv_nt = nullptr;
+    std::unique_ptr<int[]> pinv_nt;
     if (nt._permute) {
-        pinv_nt = inverse_permute(nt._permute, nt.end);
+        pinv_nt.reset(inverse_permute(nt._permute, nt.end));
     }
     for (int i = 0; i < nt.n_presyn; ++i) {
         PreSyn& ps = nt.presyns[i];
@@ -372,9 +366,6 @@ static void core2nrn_PreSyn_flag(NrnThread& nt) {
             int index_v = pinv_nt ? pinv_nt[ps.thvar_index_] : ps.thvar_index_;
             presyns_flag_true.insert(index_v);
         }
-    }
-    if (pinv_nt) {
-        delete[] pinv_nt;
     }
     // have to send even if empty so NEURON side can turn off all flag_
     (*core2nrn_PreSyn_flag_)(nt.id, presyns_flag_true);
@@ -392,9 +383,9 @@ void nrn2core_PreSyn_flag_receive(int tid) {
     if (presyns_flag_true.empty()) {
         return;
     }
-    int* pinv_nt = nullptr;
+    std::unique_ptr<int[]> pinv_nt;
     if (nt._permute) {
-        pinv_nt = inverse_permute(nt._permute, nt.end);
+        pinv_nt.reset(inverse_permute(nt._permute, nt.end));
     }
     for (int i = 0; i < nt.n_presyn; ++i) {
         PreSyn& ps = nt.presyns[i];
@@ -408,9 +399,6 @@ void nrn2core_PreSyn_flag_receive(int tid) {
                 }
             }
         }
-    }
-    if (pinv_nt) {
-        delete[] pinv_nt;
     }
 }
 
