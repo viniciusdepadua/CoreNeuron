@@ -63,7 +63,7 @@ build:nmodl:gpu:
     SPACK_PACKAGE: nmodl
     SPACK_PACKAGE_REF: ''
     SPACK_PACKAGE_SPEC: ~legacy-unit
-    SPACK_PACKAGE_DEPENDENCIES: ^bison%gcc^flex%gcc^py-jinja2%gcc^py-sympy%gcc^py-pyyaml%gcc^eigen%gcc
+    SPACK_PACKAGE_DEPENDENCIES: ^bison%gcc^flex%gcc^py-jinja2%gcc^py-sympy%gcc^py-pyyaml%gcc
   extends:
     - .spack_build
     - .spack_nvhpc
@@ -86,6 +86,9 @@ build:coreneuron:intel:
     - .spack_intel
 
 build:coreneuron+nmodl:gpu:
+  before_script:
+    - SPACK_PACKAGE_DEPENDENCIES="${SPACK_PACKAGE_DEPENDENCIES}^eigen%gcc"
+    - !reference [.spack_setup_ccache, script]
   variables:
     SPACK_PACKAGE: coreneuron
     # +report pulls in a lot of dependencies and the tests fail.
