@@ -86,9 +86,6 @@ build:coreneuron:intel:
     - .spack_intel
 
 build:coreneuron+nmodl:gpu:
-  before_script:
-    - SPACK_PACKAGE_DEPENDENCIES="${SPACK_PACKAGE_DEPENDENCIES}^eigen%gcc"
-    - !reference [.spack_setup_ccache, script]
   variables:
     SPACK_PACKAGE: coreneuron
     # +report pulls in a lot of dependencies and the tests fail.
@@ -98,6 +95,9 @@ build:coreneuron+nmodl:gpu:
   extends:
     - .spack_build
     - .spack_nvhpc
+  before_script:
+    - SPACK_PACKAGE_DEPENDENCIES="${SPACK_PACKAGE_DEPENDENCIES}^eigen%gcc"
+    - !reference [.spack_build, before_script]
   needs: ["build:nmodl:gpu"]
 
 build:coreneuron:gpu:
