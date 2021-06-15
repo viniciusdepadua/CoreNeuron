@@ -541,6 +541,66 @@ static void net_receive_buffer_order(NetReceiveBuffer_t* nrb) {
     nrb->_displ_cnt = displ_cnt;
 }
 
+void update_compute_data_on_host(NrnThread* threads, int nthreads) {
+#ifdef _OPENACC
+    for (int i = 0; i < nthreads; i++) {
+        NrnThread* nt = threads + i;
+        acc_wait(nt->stream_id);
+        for (auto const& pair: nt->compute_data_handler) {
+            auto const& data_region = pair.second;
+            if (data_region.compute_data.data() != data_region.host_data.data()) {
+                assert(data_region.host_data.size() == data_region.compute_data.size());
+                std::cout << pair.first << ": dev=" << data_region.compute_data.data()
+                          << " -> host=" << data_region.host_data.data() << ':';
+                acc_memcpy_from_device(data_region.host_data.data(),
+                                       data_region.compute_data.data(),
+                                       data_region.host_data.size_bytes());
+                span<double const> host_data{reinterpret_cast<double const*>(
+                                                 data_region.host_data.data()),
+                                             data_region.host_data.size_bytes() / sizeof(double)};
+                for (auto v: host_data) {
+                    std::cout << ' ' << v;
+                }
+                std::cout << std::endl;
+            }
+        }
+    }
+#else
+    (void) threads;
+    (void) nthreads;
+#endif
+}
+
+void update_compute_data_on_device(NrnThread* threads, int nthreads) {
+#ifdef _OPENACC
+    for (int i = 0; i < nthreads; i++) {
+        NrnThread* nt = threads + i;
+        acc_wait(nt->stream_id);
+        for (auto const& pair: nt->compute_data_handler) {
+            auto const& data_region = pair.second;
+            if (data_region.compute_data.data() != data_region.host_data.data()) {
+                assert(data_region.host_data.size() == data_region.compute_data.size());
+                std::cout << pair.first << ": host=" << data_region.host_data.data()
+                          << " -> dev=" << data_region.compute_data.data() << ':';
+                acc_memcpy_to_device(data_region.compute_data.data(),
+                                     data_region.host_data.data(),
+                                     data_region.host_data.size_bytes());
+                span<double const> host_data{reinterpret_cast<double const*>(
+                                                 data_region.host_data.data()),
+                                             data_region.host_data.size_bytes() / sizeof(double)};
+                for (auto v: host_data) {
+                    std::cout << ' ' << v;
+                }
+                std::cout << std::endl;
+            }
+        }
+    }
+#else
+    (void) threads;
+    (void) nthreads;
+#endif
+}
+
 /* when we execute NET_RECEIVE block on GPU, we provide the index of synapse instances
  * which we need to execute during the current timestep. In order to do this, we have
  * update NetReceiveBuffer_t object to GPU. When size of cpu buffer changes, we set
@@ -696,13 +756,15 @@ void update_nrnthreads_on_host(NrnThread* threads, int nthreads) {
              */
         }
     }
-#else
-    (void) threads;
-    (void) nthreads;
 #endif
+    // Note it's important that call is after the big code block above, because
+    // the `acc_update_self` calls above that refer to the big legacy data block
+    // will write to the same host locations as this call does.
+    update_compute_data_on_host(threads, nthreads);
 }
 
 void update_nrnthreads_on_device(NrnThread* threads, int nthreads) {
+    update_compute_data_on_device(threads, nthreads);
 #ifdef _OPENACC
 
     for (int i = 0; i < nthreads; i++) {
@@ -790,9 +852,6 @@ void update_nrnthreads_on_device(NrnThread* threads, int nthreads) {
              */
         }
     }
-#else
-    (void) threads;
-    (void) nthreads;
 #endif
 }
 
@@ -1292,10 +1351,11 @@ void nrn_VecPlay_copyto_device(NrnThread* nt, void** d_vecplay) {
         acc_memcpy_to_device(&(d_e_->plr_), &d_vecplay_instance, sizeof(VecPlayContinuous*));
         acc_memcpy_to_device(&(d_vecplay_instance->e_), &d_e_, sizeof(PlayRecordEvent*));
 
-        /** copy pd_ : note that it's pointer inside ml->data and hence data itself is
-         * already on GPU */
-        double* d_pd_ = (double*) acc_deviceptr(vecplay_instance->pd_);
-        acc_memcpy_to_device(&(d_vecplay_instance->pd_), &d_pd_, sizeof(double*));
+        // We do *not* do anything with `pd_` here because it is points to
+        // mechanism property data that is explicitly allocated on the GPU and
+        // is not known to the OpenACC runtime. Previously `pd_` pointed into
+        // the `_data` block, and acc_deviceptr could be used here to get a
+        // device address for it and copy that into `d_vecplay_instance`.
     }
 }
 

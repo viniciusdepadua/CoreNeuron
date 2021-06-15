@@ -808,7 +808,12 @@ void Phase2::set_vec_play(NrnThread& nt) {
         if (ml->_permute) {
             vecPlay.ix = nrn_index_permute(vecPlay.ix, vecPlay.mtype, ml);
         }
-        nt._vecplay[i] = new VecPlayContinuous(ml->data + vecPlay.ix,
+        // Previously this was just using `ml->data + vecPlay.ix`.
+        auto property_and_row = nrn_decompose_index(vecPlay.ix, vecPlay.mtype, nt);
+        // Get the data for the `property_and_row.first`-th property.
+        auto property_data =
+            nrn_get_compute_data<double>(&nt, vecPlay.mtype, "FIXME2", property_and_row.first);
+        nt._vecplay[i] = new VecPlayContinuous(&property_data[property_and_row.second],
                                                std::move(vecPlay.yvec),
                                                std::move(vecPlay.tvec),
                                                nullptr,
@@ -841,7 +846,9 @@ void Phase2::populate(NrnThread& nt, const UserParams& userParams) {
 #endif
 
     nt.stream_id = 0;
-    nt.compute_gpu = 0;
+    // This needs to be set sufficiently early that it is before anything that
+    // triggers compute data allocation (set_vec_play, for example).
+    nt.compute_gpu = userParams.use_gpu && (n_node > 0);
     auto& nrn_prop_param_size_ = corenrn.get_prop_param_size();
     auto& nrn_prop_dparam_size_ = corenrn.get_prop_dparam_size();
 

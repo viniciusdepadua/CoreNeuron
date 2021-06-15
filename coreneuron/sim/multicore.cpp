@@ -6,14 +6,18 @@
 # =============================================================================.
 */
 
-#include <cstdlib>
-#include <vector>
-
 #include "coreneuron/nrnconf.h"
 #include "coreneuron/sim/multicore.hpp"
 #include "coreneuron/utils/memory.h"
 #include "coreneuron/coreneuron.hpp"
 #include "coreneuron/utils/nrnoc_aux.hpp"
+
+#if defined(_OPENACC)
+#include <openacc.h>
+#endif
+
+#include <cstdlib>
+#include <vector>
 
 /*
 Now that threads have taken over the actual_v, v_node, etc, it might
@@ -169,4 +173,87 @@ void nrn_thread_table_check() {
             0, ml->_nodecount_padded, ml->data, ml->pdata, ml->_thread, &nt, tml->index);
     }
 }
+
+namespace {
+void noop_delete_bytes(byte*) {}
+void acc_delete_bytes(byte* p) {
+#if defined(_OPENACC)
+    if (p) {
+        std::cout << "Deallocating device data " << p << std::endl;
+        acc_free(p);
+    }
+#endif
+}
+template <typename T>
+DataRegion create_data_handler_value(span<T> host_data, bool use_compute_device) {
+#if defined(_OPENACC)
+    // OpenACC enabled, we might want to allocate on GPU
+    if (use_compute_device) {
+        // We do want to allocate on GPU, but for now we do not want to mess
+        // with the OpenACC present table so we do not want to use
+        // acc_copyin here.
+        auto* device_ptr = reinterpret_cast<byte*>(acc_malloc(host_data.size_bytes()));
+        // Initialise the memory from host_data.data().
+        // acc_memcpy_to_device(device_ptr, host_data.data(), host_data.size_bytes());
+        return {{device_ptr, host_data.size_bytes()},
+                as_writable_bytes(host_data),
+                {device_ptr, &acc_delete_bytes}};
+    } else {
+        // Use host data.
+        return {as_writable_bytes(host_data),
+                as_writable_bytes(host_data),
+                {nullptr, &noop_delete_bytes}};
+    }
+#else
+    // Use host data
+    return {as_writable_bytes(host_data),
+            as_writable_bytes(host_data),
+            {nullptr, &noop_delete_bytes}};
+#endif
+}
+}  // namespace
+
+span<byte> nrn_get_compute_data_impl(NrnThread* nt, int mech_type, const char* name, int id) {
+    // Get the mechanism information
+    Memb_list* ml = nt->_ml_list[mech_type];
+    // Find the host-side data corresponding to this property.
+    double* host_ptr = ml->data + id * ml->_nodecount_padded;
+    // First, see if this data can be handled by the new code path.
+    {
+        // In principle all the actual allocation could be done already. But as
+        // a first step then just allocate on demand here.
+        auto key = std::string{nrn_get_mechname(mech_type)} + "::" + std::to_string(id);  // name;
+        {
+            auto iter = nt->compute_data_handler.find(key);
+            if (iter != nt->compute_data_handler.end()) {
+                return iter->second.compute_data;
+            }
+        }
+        // Data not already tracked in `compute_data_handler`
+        assert(ml->nodecount >= 0);
+        auto const iter_inserted = nt->compute_data_handler.emplace(
+            std::move(key),
+            create_data_handler_value(span<double>{host_ptr, std::size_t(ml->nodecount)},
+                                      nt->compute_gpu && !corenrn.get_is_artificial()[mech_type]));
+        auto const& iter = iter_inserted.first;
+        assert(iter_inserted.second);  // we should have added a new entry.
+        std::cout << iter->first << " (" << name << "): host=" << iter->second.host_data.data()
+                  << " <=> compute=" << iter->second.compute_data.data()
+                  << "[new, size=" << ml->nodecount << ", thread=" << nt
+                  << ", compute_gpu=" << nt->compute_gpu
+                  << ", is_artificial=" << corenrn.get_is_artificial()[mech_type] << ']'
+                  << std::endl;
+        return iter->second.compute_data;
+    }
+    // New code didn't handle this request, fall back to the old behaviour.
+    // #if defined(_OPENACC)
+    //     int is_art = corenrn.get_is_artificial()[mech_type];
+    //     if ( nt->compute_gpu && !is_art ) {
+    //         return as_writable_bytes( span<double>{reinterpret_cast<double*>(
+    //         acc_deviceptr(host_ptr) ), ml->nodecount} );
+    //     }
+    // #endif
+    //     return as_writable_bytes( span<double>{host_ptr, ml->nodecount} );
+}
+
 }  // namespace coreneuron

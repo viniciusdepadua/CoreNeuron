@@ -252,12 +252,23 @@ void nrn_partrans::gap_data_indices_setup(NrnThread* n) {
         sti.src_index[i] = int(d - nt._data);
     }
 
+    // The indices that CoreNEURON receives from NEURON are 32 bit integers, but
+    // internally we use a wider type.
+    using tar_index_t = decltype(ttd.tar_indices)::value_type;
+    ttd.tar_indices.resize(sti.tar_sid.size());
+
     // For copying into NrnThread._data from insrc_buf.
+    // At least in ring_gap_TEST, these are pointers into property data.
     for (size_t i = 0; i < sti.tar_sid.size(); ++i) {
+        // `tar_type[i]` is the mechanism type (or a special value representing
+        // voltage, current or time), and `tar_index[i]` encodes both which
+        // mechanism property and which instance of the mechanism is being
+        // referred to.
         double* d = stdindex2ptr(sti.tar_type[i], sti.tar_index[i], nt);
-        // todo : this should be revisited once nt._data will be broken
-        // into mechanism specific data
-        sti.tar_index[i] = int(d - nt._data);
+        auto fake_index = d - nt._data;
+        assert(fake_index <= std::numeric_limits<tar_index_t>::max() &&
+               fake_index >= std::numeric_limits<tar_index_t>::lowest());
+        ttd.tar_indices[i] = fake_index;
     }
 
     // Here we could reorder sti.src_... according to NrnThread._data index
@@ -265,7 +276,6 @@ void nrn_partrans::gap_data_indices_setup(NrnThread* n) {
 
     // copy into TransferThreadData
     ttd.src_indices = sti.src_index;
-    ttd.tar_indices = sti.tar_index;
 }
 
 void nrn_partrans::gap_cleanup() {

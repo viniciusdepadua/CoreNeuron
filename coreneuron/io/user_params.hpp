@@ -20,13 +20,15 @@ struct UserParams {
                int* gidgroups_,
                const char* path_,
                const char* restore_path_,
-               CheckPoints& checkPoints_)
+               CheckPoints& checkPoints_,
+               bool use_gpu_)
         : ngroup(ngroup_)
         , gidgroups(gidgroups_)
         , path(path_)
         , restore_path(restore_path_)
         , file_reader(ngroup_)
-        , checkPoints(checkPoints_) {}
+        , checkPoints(checkPoints_)
+        , use_gpu{use_gpu_} {}
 
     /// direct memory mode with neuron, do not open files
     /// Number of local cell groups
@@ -39,5 +41,7 @@ struct UserParams {
     const char* const restore_path;
     std::vector<FileHandler> file_reader;
     CheckPoints& checkPoints;
+    /// Is GPU computation enabled
+    bool use_gpu;
 };
 }  // namespace coreneuron

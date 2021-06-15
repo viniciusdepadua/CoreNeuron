@@ -11,6 +11,8 @@
 
 #include "coreneuron/sim/multicore.hpp"
 
+#include <utility>
+
 namespace coreneuron {
 
 // determine ml->_permute and permute the ml->nodeindices accordingly
@@ -25,6 +27,7 @@ void permute_ptr(int* vec, int n, int* permute);
 void permute_data(double* vec, int n, int* permute);
 void permute_ml(Memb_list* ml, int type, NrnThread& nt);
 int nrn_index_permute(int, int type, Memb_list* ml);
+std::pair<int, int> nrn_decompose_index(int index, int type, NrnThread const& nt);
 
 int* inverse_permute(int* p, int n);
 

@@ -82,7 +82,11 @@ struct TransferThreadData {
     std::vector<int> outsrc_indices;         // ix of outsrc_buf that receive src_gather values
 
     std::vector<int> insrc_indices;  // insrc_buf_ indices copied to ...
-    std::vector<int> tar_indices;    // indices of NrnThread.data.
+    // This might not be a wide enough type: "Only pointers to elements of the
+    // same array (including the pointer one past the end of the array) may be
+    // subtracted from each other.",
+    // https://en.cppreference.com/w/cpp/types/ptrdiff_t
+    std::vector<std::ptrdiff_t> tar_indices;  // indices of NrnThread.data.
 };
 extern TransferThreadData* transfer_thread_data_; /* array for threads */
 

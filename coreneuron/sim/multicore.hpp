@@ -10,11 +10,16 @@
 
 #include "coreneuron/nrnconf.h"
 #include "coreneuron/mechanism/membfunc.hpp"
+#include "coreneuron/utils/byte.hpp"
 #include "coreneuron/utils/memory.h"
+#include "coreneuron/utils/span.hpp"
 #include "coreneuron/mpi/nrnmpi.h"
 #include "coreneuron/io/reports/nrnreport.hpp"
-#include <vector>
+
 #include <memory>
+#include <type_traits>
+#include <unordered_map>
+#include <vector>
 
 namespace coreneuron {
 class NetCon;
@@ -68,6 +73,17 @@ struct TrajectoryRequests {
  */
 struct PreSynHelper {
     int flag_;
+};
+
+struct DataRegion {
+    span<byte> compute_data, host_data;
+    std::unique_ptr<byte, void (*)(byte*)> owned_compute_data;
+    DataRegion(span<byte> compute_data_,
+               span<byte> host_data_,
+               std::unique_ptr<byte, void (*)(byte*)> owned_compute_data_)
+        : compute_data{compute_data_}
+        , host_data{host_data_}
+        , owned_compute_data{std::move(owned_compute_data_)} {}
 };
 
 struct NrnThread: public MemoryManaged {
@@ -145,6 +161,11 @@ struct NrnThread: public MemoryManaged {
     /* Needed in case there are FOR_NETCON statements in use. */
     std::vector<size_t> _fornetcon_perm_indices; /* displacement like list of indices */
     std::vector<size_t> _fornetcon_weight_perm;  /* permutation indices into weight */
+
+    /* Store information needed for book keeping and managing the lifetime of
+     * data allocated on a compute device.
+     */
+    std::unordered_map<std::string, DataRegion> compute_data_handler;
 };
 
 extern void nrn_threads_create(int n);
@@ -185,6 +206,25 @@ extern void nrn_finitialize(int setv, double v);
 extern void nrn_mk_table_check(void);
 extern void nonvint(NrnThread* _nt);
 extern void update(NrnThread*);
+extern span<byte> nrn_get_compute_data_impl(NrnThread* nt, int mech_type, const char* name, int id);
 
-
+/**
+ * @brief API for translated modfiles to get pointers to their data.
+ *
+ * @tparam T         Requested data type. This should be const qualified if appropriate.
+ * @param  nt        Cell group being computed.
+ * @param  mech_type ID of this mechanism; allows details to be looked up in registry.
+ * @param  name      Name of this data; `id` can be derived from this, remove `id`.
+ * @param  id        Index of this data within the mechanism's data. To be removed.
+ * @return span<T>   Data to be used by this mechanism's compute kernel.
+ * @todo   Take `nt` by reference?
+ */
+template <typename T>
+span<T> nrn_get_compute_data(NrnThread* nt, int mech_type, const char* name, int id) {
+    static_assert(std::is_same<T, double>::value,
+                  "nrn_get_compute_data_ptr only supports double* for now.");
+    auto const bytes = nrn_get_compute_data_impl(nt, mech_type, name, id);
+    assert(bytes.size() % sizeof(T) == 0);
+    return {reinterpret_cast<T*>(bytes.data()), bytes.size() / sizeof(T)};
+}
 }  // namespace coreneuron

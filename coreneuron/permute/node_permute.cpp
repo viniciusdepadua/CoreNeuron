@@ -272,6 +272,30 @@ int nrn_index_permute(int ix, int type, Memb_list* ml) {
     }
 }
 
+/**
+ * @brief Transform a `_data` index into mechanism and instance indices.
+ *
+ * @param index Index into the legacy `_data` block.
+ * @param type  Mechanism type.
+ * @param nt    Cell group.
+ * @return std::pair<int, int> [x, y] where `index` refers to the xth property
+ *                             of the yth instance of mechanism `type`.
+ */
+std::pair<int, int> nrn_decompose_index(int index, int type, NrnThread const& nt) {
+    Memb_list* ml = nt._ml_list[type];
+    auto layout = corenrn.get_mech_data_layout()[type];
+    if (layout == Layout::AoS) {
+        auto sz = corenrn.get_prop_param_size()[type];
+        // `index` is `y*sz + x`
+        return {index % sz, index / sz};
+    } else {
+        assert(layout == Layout::SoA);
+        int padded_cnt = nrn_soa_padded_size(ml->nodecount, layout);
+        // `index` is `x*padded_cnt + y`
+        return {index / padded_cnt, index % padded_cnt};
+    }
+}
+
 #if DEBUG
 static void pr(const char* s, int* x, int n) {
     printf("%s:", s);

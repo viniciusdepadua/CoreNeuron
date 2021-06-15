@@ -6,6 +6,7 @@
 # =============================================================================.
 */
 
+#include "coreneuron/gpu/nrn_acc_manager.hpp"
 #include "coreneuron/nrnconf.h"
 #include "coreneuron/network/netpar.hpp"
 #include "coreneuron/network/netcvode.hpp"
@@ -64,10 +65,13 @@ void nrn_finitialize(int setv, double v) {
         for (auto tml = nt->tml; tml; tml = tml->next) {
             mod_f_t s = corenrn.get_memb_func(tml->index).initialize;
             if (s) {
+                std::cout << "Calling initialize(" << nrn_get_mechname(tml->index) << ')'
+                          << std::endl;
                 (*s)(nt, tml->ml, tml->index);
             }
         }
     }
+    // update_compute_data_on_host(nrn_threads, nrn_nthread);
 #endif
 
     init_net_events();

@@ -179,9 +179,11 @@ add_dependencies(coreneuron kin_deriv_header nrnivmodl-core)
 
 # scopmath is created separately for nrnivmodl-core workflow
 add_library(scopmath STATIC ${CORENEURON_HEADER_FILES} ${SCOPMATH_CODE_FILES})
+target_link_libraries(scopmath PUBLIC gsl::gsl-lite-v1)
 
 target_link_libraries(
   coreneuron
+  gsl::gsl-lite-v1
   ${reportinglib_LIBRARY}
   ${sonatareport_LIBRARY}
   ${link_cudacoreneuron}

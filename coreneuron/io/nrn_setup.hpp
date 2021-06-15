@@ -30,7 +30,8 @@ void nrn_setup(const char* filesdat,
                bool run_setup_cleanup = true,
                const char* datapath = "",
                const char* restore_path = "",
-               double* mindelay = nullptr);
+               double* mindelay = nullptr,
+               bool use_gpu = false);
 
 // Functions to load and clean data;
 extern void nrn_init_and_load_data(int argc,

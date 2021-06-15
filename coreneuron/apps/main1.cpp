@@ -238,7 +238,8 @@ void nrn_init_and_load_data(int argc,
               run_setup_cleanup,
               corenrn_param.datpath.c_str(),
               checkPoints.get_restore_path().c_str(),
-              &corenrn_param.mindelay);
+              &corenrn_param.mindelay,
+              corenrn_param.gpu);
 
     // Allgather spike compression and  bin queuing.
     nrn_use_bin_queue_ = corenrn_param.binqueue;
@@ -514,8 +515,9 @@ extern "C" int run_solve_core(int argc, char** argv) {
         // TODO : if some ranks are empty then restore will go in deadlock
         // phase (as some ranks won't have restored anything and hence return
         // false in checkpoint_initialize
-        if (!checkPoints.initialize()) {
-            nrn_finitialize(v != 1000., v);
+        if (!checkPoints.initialize()) {     // this calls nrn_init methods for the first time, but
+                                             // without INITIALIZE
+            nrn_finitialize(v != 1000., v);  // nrn_init methods are called again inside here
         }
 
         if (!corenrn_param.is_quiet()) {
@@ -607,6 +609,10 @@ extern "C" int run_solve_core(int argc, char** argv) {
 
     // cleanup threads on GPU
     if (corenrn_param.gpu) {
+        for (int i = 0; i < nrn_nthread; i++) {
+            NrnThread* nt = nrn_threads + i;
+            nt->compute_data_handler.clear();
+        }
         delete_nrnthreads_on_device(nrn_threads, nrn_nthread);
     }
 

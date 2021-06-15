@@ -407,7 +407,8 @@ void nrn_setup(const char* filesdat,
                bool run_setup_cleanup,
                const char* datpath,
                const char* restore_path,
-               double* mindelay) {
+               double* mindelay,
+               bool use_gpu) {
     double time = nrn_wtime();
 
     int ngroup;
@@ -417,7 +418,8 @@ void nrn_setup(const char* filesdat,
                           gidgroups,
                           datpath,
                           strlen(restore_path) == 0 ? datpath : restore_path,
-                          checkPoints);
+                          checkPoints,
+                          use_gpu);
 
 
     // temporary bug work around. If any process has multiple threads, no
@@ -661,7 +663,12 @@ double* stdindex2ptr(int mtype, int index, NrnThread& nt) {
         if (ml->_permute) {
             ix = nrn_index_permute(ix, mtype, ml);
         }
-        return ml->data + ix;
+        // Previously this was just returning `ml->data + ix`.
+        auto property_and_row = nrn_decompose_index(ix, mtype, nt);
+        // Get the data for the `property_and_row.first`-th property.
+        auto property_data =
+            nrn_get_compute_data<double>(&nt, mtype, "FIXME", property_and_row.first);
+        return &property_data[property_and_row.second];
     } else if (mtype == 0) {  // time
         return &nt._t;
     } else {

@@ -113,7 +113,7 @@ void nrnthread_v_transfer(NrnThread* _nt) {
     // may be copied to several target locations.
     TransferThreadData& ttd = transfer_thread_data_[_nt->id];
     size_t ntar = ttd.tar_indices.size();
-    int* tar_indices = ttd.tar_indices.data();
+    auto* tar_indices = ttd.tar_indices.data();
     int* insrc_indices = ttd.insrc_indices.data();
     double* tar_data = _nt->_data;
     // last element in the displacement vector gives total length
@@ -124,8 +124,8 @@ void nrnthread_v_transfer(NrnThread* _nt) {
 
     #pragma acc parallel loop present(  \
         insrc_indices[0:ntar],          \
-        tar_data[0:ndata],              \
         insrc_buf_[0:n_insrc_buf])      \
+        deviceptr(tar_data)             \
     if (_nt->compute_gpu)               \
         async(_nt->stream_id)
     // clang-format on

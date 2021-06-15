@@ -10,6 +10,7 @@
 #include <cassert>
 #include <memory>
 
+#include "coreneuron/gpu/nrn_acc_manager.hpp"
 #include "coreneuron/sim/multicore.hpp"
 #include "coreneuron/nrniv/nrniv_decl.h"
 #include "coreneuron/io/nrn_filehandler.hpp"
@@ -544,6 +545,11 @@ bool CheckPoints::initialize() {
         }
     }
     _nrn_skip_initmodel = false;
+
+    // This is immediately after the `nrn_init_...` methods are called and
+    // device memory is allocated on demand. Property values from NEURON etc.
+    // need to be propagated to that memory, which is uninitialised.
+    update_compute_data_on_device(nrn_threads, nrn_nthread);
 
     // if PatternStim exists, needs initialization
     for (NrnThreadMembList* tml = nrn_threads[0].tml; tml; tml = tml->next) {
