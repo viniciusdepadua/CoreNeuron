@@ -13,3 +13,6 @@
 [submodule "CMake/hpc-coding-conventions"]
 	path = CMake/hpc-coding-conventions
 	url = https://github.com/BlueBrain/hpc-coding-conventions.git
+[submodule "external/gsl-lite"]
+	path = external/gsl-lite
+	url = https://github.com/gsl-lite/gsl-lite.git

@@ -54,6 +54,33 @@ include(AddHpcCodingConvSubmodule)
 add_subdirectory(CMake/hpc-coding-conventions/cpp)
 
 # =============================================================================
+# Setup GSL-lite
+# =============================================================================
+find_package(gsl-lite 0.38 CONFIG)
+if(gsl-lite_FOUND)
+  # Tell nrnivmodl-core to add the include directory for the external version of gsl-lite.
+  get_target_property(gsl-lite-v1-include-directory gsl::gsl-lite-v1 INTERFACE_INCLUDE_DIRECTORIES)
+  set(CORENRN_COMMON_INCFLAGS -I${gsl-lite-v1-include-directory})
+else()
+  # Initialise the submodule and call add_subdirectory.
+  cpp_cc_git_submodule(gsl-lite BUILD)
+  # Ideally the above would be enough...but the nrnivmodl workflow does a lot of stuff manually.
+  # Until that is re-worked to be more CMake friendly, this workaround just copies the GSL-lite
+  # headers into the build tree. Using the trick with INTERFACE_INCLUDE_DIRECTORIES does not work in
+  # this case, because the returned value contains generator expressions...
+  foreach(gsl_header gsl-lite/gsl-lite.hpp gsl/gsl-lite.hpp)
+    configure_file("${CORENEURON_PROJECT_SOURCE_DIR}/external/gsl-lite/include/${gsl_header}"
+                   "${CMAKE_BINARY_DIR}/include/${gsl_header}" COPYONLY)
+  endforeach()
+endif()
+# Unpack the (modern) CMake target properties into old-style global properties that will be propaged
+# to the nrnivmodl-core Makefile.
+get_target_property(gsl-lite-v1-compile-definitions gsl::gsl-lite-v1 INTERFACE_COMPILE_DEFINITIONS)
+foreach(gsl-lite-v1-compile-definition ${gsl-lite-v1-compile-definitions})
+  add_definitions(-D${gsl-lite-v1-compile-definition})
+endforeach()
+
+# =============================================================================
 # Include common cmake modules
 # =============================================================================
 include(CheckIncludeFiles)
