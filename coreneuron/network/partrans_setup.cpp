@@ -187,10 +187,10 @@ void nrn_partrans::gap_mpi_setup(int ngroup) {
     // An sgid occurs at most once in the process recv_from_have.
     // But it might get distributed to more than one thread and to
     // several targets in a thread (specified by tar2info)
-    // insrc_indices is parallel to tar_indices and has size ntar of the thread.
+    // insrc_indices is parallel to target_data and has size ntar of the thread.
     // insrc_indices[i] is the index into insrc_buf
-    // tar_indices[i] is the index into NrnThread.data
-    // i.e. NrnThead._data[tar_indices[i]] = insrc_buf[insrc_indices[i]]
+    // target_data[i] is a pointer into mechanism data (previously inside NrnThread::data)
+    // i.e. (target_data[i] = insrc_buf[insrc_indices[i]]
     for (int i = 0; i < insrcdspl_[nhost]; ++i) {
         sgid_t sgid = recv_from_have[i];
         SidInfo& sidinfo = tar2info[sgid];
@@ -216,13 +216,13 @@ void nrn_partrans::gap_mpi_setup(int ngroup) {
                    ttd.src_indices[i],
                    nrn_threads[tid]._data[ttd.src_indices[i]]);
         }
-        for (size_t i = 0; i < ttd.tar_indices.size(); ++i) {
-            printf("%d %d src sid=i%z tar_index=%d %g\n",
+        for (size_t i = 0; i < ttd.target_data.size(); ++i) {
+            printf("%d %d src sid=i%z tar_ptr=%p %g\n",
                    nrnmpi_myid,
                    tid,
                    i,
-                   ttd.tar_indices[i],
-                   nrn_threads[tid]._data[ttd.tar_indices[i]]);
+                   ttd.target_data[i],
+                   *ttd.target_data[i]);
         }
     }
 #endif
@@ -244,31 +244,23 @@ void nrn_partrans::gap_data_indices_setup(NrnThread* n) {
     ttd.src_gather.resize(sti.src_sid.size());
     ttd.src_indices.resize(sti.src_sid.size());
     ttd.insrc_indices.resize(sti.tar_sid.size());
-    ttd.tar_indices.resize(sti.tar_sid.size());
+    ttd.target_data.reserve(sti.tar_sid.size());
 
     // For copying into src_gather from NrnThread._data
-    for (size_t i = 0; i < sti.src_sid.size(); ++i) {
+    // FIXME: this won't work in general?
+    for (std::size_t i = 0; i < sti.src_sid.size(); ++i) {
         double* d = stdindex2ptr(sti.src_type[i], sti.src_index[i], nt);
         sti.src_index[i] = int(d - nt._data);
     }
 
-    // The indices that CoreNEURON receives from NEURON are 32 bit integers, but
-    // internally we use a wider type.
-    using tar_index_t = decltype(ttd.tar_indices)::value_type;
-    ttd.tar_indices.resize(sti.tar_sid.size());
-
     // For copying into NrnThread._data from insrc_buf.
     // At least in ring_gap_TEST, these are pointers into property data.
-    for (size_t i = 0; i < sti.tar_sid.size(); ++i) {
+    for (std::size_t i = 0; i < sti.tar_sid.size(); ++i) {
         // `tar_type[i]` is the mechanism type (or a special value representing
         // voltage, current or time), and `tar_index[i]` encodes both which
         // mechanism property and which instance of the mechanism is being
         // referred to.
-        double* d = stdindex2ptr(sti.tar_type[i], sti.tar_index[i], nt);
-        auto fake_index = d - nt._data;
-        assert(fake_index <= std::numeric_limits<tar_index_t>::max() &&
-               fake_index >= std::numeric_limits<tar_index_t>::lowest());
-        ttd.tar_indices[i] = fake_index;
+        ttd.target_data.emplace_back(stdindex2ptr(sti.tar_type[i], sti.tar_index[i], nt));
     }
 
     // Here we could reorder sti.src_... according to NrnThread._data index

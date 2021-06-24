@@ -10,6 +10,8 @@
 
 #include "coreneuron/sim/multicore.hpp"
 
+#include <gsl-lite/gsl-lite.hpp>
+
 namespace coreneuron {
 struct Memb_list;
 
@@ -71,8 +73,7 @@ using sgid_t = int;
  *
  * In partrans.cpp: nrnthread_v_transfer
  *   insrc_buf_ to NrnThread._data via
- *   NrnThread.data[tar_indices[i]] = insrc_buf_[insrc_indices[i]];
- *     where tar_indices depends on layout, type, etc.
+ *   *target_data[i] = insrc_buf_[insrc_indices[i]];
  */
 
 struct TransferThreadData {
@@ -80,13 +81,12 @@ struct TransferThreadData {
     std::vector<double> src_gather;          // copy of NrnThread._data[src_indices]
     std::vector<int> gather2outsrc_indices;  // ix of src_gather that send into outsrc_indices
     std::vector<int> outsrc_indices;         // ix of outsrc_buf that receive src_gather values
-
-    std::vector<int> insrc_indices;  // insrc_buf_ indices copied to ...
-    // This might not be a wide enough type: "Only pointers to elements of the
-    // same array (including the pointer one past the end of the array) may be
-    // subtracted from each other.",
-    // https://en.cppreference.com/w/cpp/types/ptrdiff_t
-    std::vector<std::ptrdiff_t> tar_indices;  // indices of NrnThread.data.
+    std::vector<int> insrc_indices;          // insrc_buf_ indices copied to ...
+    /**
+     * @brief Pointers to compute data that will be updated from insrc_buf_.
+     * 
+     */
+    std::vector<gsl_lite::not_null<double*>> target_data;
 };
 extern TransferThreadData* transfer_thread_data_; /* array for threads */
 

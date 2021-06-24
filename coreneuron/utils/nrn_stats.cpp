@@ -40,7 +40,7 @@ void report_cell_stats(void) {
         stat_array[3] += nrn_threads[ith].n_netcon;        // number of netcons, synapses
         stat_array[4] += nrn_threads[ith].n_pntproc;       // number of point processes
         if (nrn_partrans::transfer_thread_data_) {
-            size_t n = nrn_partrans::transfer_thread_data_[ith].tar_indices.size();
+            auto n = nrn_partrans::transfer_thread_data_[ith].target_data.size();
             stat_array[11] += n;  // number of transfer targets
             n = nrn_partrans::transfer_thread_data_[ith].src_indices.size();
             stat_array[12] += n;  // number of transfer sources
