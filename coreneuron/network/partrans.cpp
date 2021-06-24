@@ -49,14 +49,14 @@ void nrnmpi_v_transfer() {
 
         // gather sources on gpu and copy to cpu, cpu scatters to outsrc_buf
         double* src_gather = ttd.src_gather.data();
-        size_t n_src_gather = ttd.src_gather.size();
+        std::size_t n_src_gather{ttd.src_gather.size()};
         // clang-format off
 
         #pragma acc parallel loop present(                                          \
             src_indices[0:n_src_gather], src_data[0:nt._ndata],                     \
             src_gather[0 : n_src_gather]) /*copyout(src_gather[0:n_src_gather])*/   \
             if (nt.compute_gpu) async(nt.stream_id)
-        for (int i = 0; i < n_src_gather; ++i) {
+        for (std::size_t i = 0; i < n_src_gather; ++i) {
             src_gather[i] = src_data[src_indices[i]];
         }
         // do not know why the copyout above did not work
@@ -112,20 +112,20 @@ void nrnthread_v_transfer(NrnThread* _nt) {
     // Copy insrc_buf_ values to the target locations. (An insrc_buf_ value
     // may be copied to several target locations.
     TransferThreadData& ttd = transfer_thread_data_[_nt->id];
-    auto const ntar = ttd.target_data.size();
+    auto const ntar = ttd.tar_data.size();
     assert(ntar == ttd.insrc_indices.size());
-    auto* target_data = ttd.target_data.data();
+    auto* tar_data = ttd.tar_data.data();
     auto* insrc_indices = ttd.insrc_indices.data();
     // last element in the displacement vector gives total length
     int n_insrc_buf = insrcdspl_[nrnmpi_numprocs];
     #pragma acc parallel loop present(  \
         insrc_indices[0:ntar],          \
         insrc_buf_[0:n_insrc_buf],      \
-        target_data[0:ntar])            \
+        tar_data[0:ntar])            \
     if (_nt->compute_gpu)               \
         async(_nt->stream_id)
     for (std::size_t i = 0; i < ntar; ++i) {
-        *target_data[i] = insrc_buf_[insrc_indices[i]];
+        *tar_data[i] = insrc_buf_[insrc_indices[i]];
     }
 }
 
@@ -155,10 +155,10 @@ void nrn_partrans::gap_update_indices() {
 
         auto const n_insrc_indices = ttd.insrc_indices.size();
         if (n_insrc_indices) {
-            assert(n_insrc_indices == ttd.target_data.size());
-            auto const* target_data = ttd.target_data.data();
+            assert(n_insrc_indices == ttd.tar_data.size());
+            auto const* tar_data = ttd.tar_data.data();
             auto const* insrc_indices = ttd.insrc_indices.data();
-            #pragma acc enter data copyin(insrc_indices[0:n_insrc_indices], target_data[0:n_insrc_indices]) if (nt->compute_gpu)
+            #pragma acc enter data copyin(insrc_indices[0:n_insrc_indices], tar_data[0:n_insrc_indices]) if (nt->compute_gpu)
         }
     }
 }

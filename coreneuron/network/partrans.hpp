@@ -73,7 +73,7 @@ using sgid_t = int;
  *
  * In partrans.cpp: nrnthread_v_transfer
  *   insrc_buf_ to NrnThread._data via
- *   *target_data[i] = insrc_buf_[insrc_indices[i]];
+ *   *tar_data[i] = insrc_buf_[insrc_indices[i]];
  */
 
 struct TransferThreadData {
@@ -86,7 +86,7 @@ struct TransferThreadData {
      * @brief Pointers to compute data that will be updated from insrc_buf_.
      * 
      */
-    std::vector<gsl_lite::not_null<double*>> target_data;
+    std::vector<gsl_lite::not_null<double*>> tar_data;
 };
 extern TransferThreadData* transfer_thread_data_; /* array for threads */
 

@@ -187,10 +187,10 @@ void nrn_partrans::gap_mpi_setup(int ngroup) {
     // An sgid occurs at most once in the process recv_from_have.
     // But it might get distributed to more than one thread and to
     // several targets in a thread (specified by tar2info)
-    // insrc_indices is parallel to target_data and has size ntar of the thread.
+    // insrc_indices is parallel to tar_data and has size ntar of the thread.
     // insrc_indices[i] is the index into insrc_buf
-    // target_data[i] is a pointer into mechanism data (previously inside NrnThread::data)
-    // i.e. (target_data[i] = insrc_buf[insrc_indices[i]]
+    // tar_data[i] is a pointer into mechanism data (previously inside NrnThread::data)
+    // i.e. (tar_data[i] = insrc_buf[insrc_indices[i]]
     for (int i = 0; i < insrcdspl_[nhost]; ++i) {
         sgid_t sgid = recv_from_have[i];
         SidInfo& sidinfo = tar2info[sgid];
@@ -198,7 +198,6 @@ void nrn_partrans::gap_mpi_setup(int ngroup) {
         for (size_t j = 0; j < sidinfo.tids_.size(); ++j) {
             int tid = sidinfo.tids_[j];
             int index = sidinfo.indices_[j];
-
             transfer_thread_data_[tid].insrc_indices[index] = i;
         }
     }
@@ -216,13 +215,13 @@ void nrn_partrans::gap_mpi_setup(int ngroup) {
                    ttd.src_indices[i],
                    nrn_threads[tid]._data[ttd.src_indices[i]]);
         }
-        for (size_t i = 0; i < ttd.target_data.size(); ++i) {
+        for (size_t i = 0; i < ttd.tar_data.size(); ++i) {
             printf("%d %d src sid=i%z tar_ptr=%p %g\n",
                    nrnmpi_myid,
                    tid,
                    i,
-                   ttd.target_data[i],
-                   *ttd.target_data[i]);
+                   ttd.tar_data[i],
+                   *ttd.tar_data[i]);
         }
     }
 #endif
@@ -244,7 +243,7 @@ void nrn_partrans::gap_data_indices_setup(NrnThread* n) {
     ttd.src_gather.resize(sti.src_sid.size());
     ttd.src_indices.resize(sti.src_sid.size());
     ttd.insrc_indices.resize(sti.tar_sid.size());
-    ttd.target_data.reserve(sti.tar_sid.size());
+    ttd.tar_data.reserve(sti.tar_sid.size());
 
     // For copying into src_gather from NrnThread._data
     // FIXME: this won't work in general?
@@ -260,7 +259,7 @@ void nrn_partrans::gap_data_indices_setup(NrnThread* n) {
         // voltage, current or time), and `tar_index[i]` encodes both which
         // mechanism property and which instance of the mechanism is being
         // referred to.
-        ttd.target_data.emplace_back(stdindex2ptr(sti.tar_type[i], sti.tar_index[i], nt));
+        ttd.tar_data.emplace_back(stdindex2ptr(sti.tar_type[i], sti.tar_index[i], nt));
     }
 
     // Here we could reorder sti.src_... according to NrnThread._data index
