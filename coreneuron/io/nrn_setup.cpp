@@ -666,8 +666,7 @@ double* stdindex2ptr(int mtype, int index, NrnThread& nt) {
         // Previously this was just returning `ml->data + ix`.
         auto property_and_row = nrn_decompose_index(ix, mtype, nt);
         // Get the data for the `property_and_row.first`-th property.
-        auto property_data =
-            nrn_get_compute_data<double>(&nt, mtype, "FIXME", property_and_row.first);
+        auto property_data = nrn_get_compute_data<double>(nt, mtype, property_and_row.first);
         return &property_data[property_and_row.second];
     } else if (mtype == 0) {  // time
         return &nt._t;

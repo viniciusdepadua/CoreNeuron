@@ -5,10 +5,10 @@
 # See top-level LICENSE file for details.
 # =============================================================================.
 */
-
 #pragma once
 
 #include "coreneuron/nrnconf.h"
+#include "coreneuron/mechanism/mech_mapping.hpp"
 #include "coreneuron/mechanism/membfunc.hpp"
 #include "coreneuron/utils/byte.hpp"
 #include "coreneuron/utils/memory.h"
@@ -224,6 +224,26 @@ span<T> nrn_get_compute_data(NrnThread* nt, int mech_type, const char* name, int
     static_assert(std::is_same<T, double>::value,
                   "nrn_get_compute_data_ptr only supports double* for now.");
     auto const bytes = nrn_get_compute_data_impl(nt, mech_type, name, id);
+    assert(bytes.size() % sizeof(T) == 0);
+    return {reinterpret_cast<T*>(bytes.data()), bytes.size() / sizeof(T)};
+}
+
+/**
+ * @brief API for translated modfiles to get pointers to their data.
+ *
+ * @tparam T         Requested data type. This should be const qualified if appropriate.
+ * @param  nt        Cell group being computed.
+ * @param  mech_type ID of this mechanism; allows details to be looked up in registry.
+ * @param  id        Index of this data within the mechanism's data.
+ * @return span<T>   Data to be used by this mechanism's compute kernel.
+ */
+template <typename T>
+span<T> nrn_get_compute_data(NrnThread& nt, int mech_type, int id) {
+    static_assert(std::is_same<T, double>::value,
+                  "nrn_get_compute_data_ptr only supports double* for now.");
+    // Get the name of the `id`-th piece of data in this mechanism.
+    auto const id_name = get_var_name_from_var_location(mech_type, id);
+    auto const bytes = nrn_get_compute_data_impl(&nt, mech_type, id_name.c_str(), id);
     assert(bytes.size() % sizeof(T) == 0);
     return {reinterpret_cast<T*>(bytes.data()), bytes.size() / sizeof(T)};
 }

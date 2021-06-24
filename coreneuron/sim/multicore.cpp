@@ -222,7 +222,7 @@ span<byte> nrn_get_compute_data_impl(NrnThread* nt, int mech_type, const char* n
     {
         // In principle all the actual allocation could be done already. But as
         // a first step then just allocate on demand here.
-        auto key = std::string{nrn_get_mechname(mech_type)} + "::" + std::to_string(id);  // name;
+        auto key = std::string{nrn_get_mechname(mech_type)} + "::" + name;
         {
             auto iter = nt->compute_data_handler.find(key);
             if (iter != nt->compute_data_handler.end()) {
@@ -237,7 +237,7 @@ span<byte> nrn_get_compute_data_impl(NrnThread* nt, int mech_type, const char* n
                                       nt->compute_gpu && !corenrn.get_is_artificial()[mech_type]));
         auto const& iter = iter_inserted.first;
         assert(iter_inserted.second);  // we should have added a new entry.
-        std::cout << iter->first << " (" << name << "): host=" << iter->second.host_data.data()
+        std::cout << iter->first << ": host=" << iter->second.host_data.data()
                   << " <=> compute=" << iter->second.compute_data.data()
                   << "[new, size=" << ml->nodecount << ", thread=" << nt
                   << ", compute_gpu=" << nt->compute_gpu
