@@ -6,14 +6,15 @@
 # =============================================================================
 */
 
+#include "coreneuron/mechanism/mech_mapping.hpp"
+#include "coreneuron/mechanism/mechanism.hpp"
+#include "coreneuron/permute/data_layout.hpp"
+
+#include <algorithm>
 #include <cstring>
 #include <cstdlib>
 #include <iostream>
 #include <map>
-
-#include "coreneuron/mechanism/mech_mapping.hpp"
-#include "coreneuron/mechanism/mechanism.hpp"
-#include "coreneuron/permute/data_layout.hpp"
 
 namespace coreneuron {
 using Offset = size_t;
@@ -54,6 +55,25 @@ double* get_var_location_from_var_name(int mech_id,
     int ix = get_data_index(node_index, variable_rank, mech_id, ml);
     return &(ml->data[ix]);
 }
+
+std::string get_var_name_from_var_location(int mech_id, int variable_index) {
+    auto const mapping_iter = mechNamesMapping.find(mech_id);
+    if (mapping_iter == mechNamesMapping.end()) {
+        return {};
+    }
+    // mechanism_variables["name_of_variable"] = index_of_variable
+    auto const& mechanism_variables = mapping_iter->second;
+    auto const var_iter = std::find_if(mechanism_variables.begin(),
+                                       mechanism_variables.end(),
+                                       [variable_index](auto const& name_and_offset) {
+                                           return name_and_offset.second == variable_index;
+                                       });
+    if (var_iter == mechanism_variables.end()) {
+        return {};
+    }
+    return var_iter->first;
+}
+
 
 void register_all_variables_offsets(int mech_id, SerializedNames variable_names) {
     int idx = 0;

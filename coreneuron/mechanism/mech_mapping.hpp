@@ -5,10 +5,8 @@
 # See top-level LICENSE file for details.
 # =============================================================================
 */
-
-#ifndef MECH_MAPPING_H
-#define MECH_MAPPING_H
-
+#pragma once
+#include <string>
 /*
  * todo : currently mod2c has exactly 4 different variable categories
  * that are registered to coreneuron.
@@ -37,8 +35,11 @@ extern double* get_var_location_from_var_name(int mech_id,
                                               Memb_list* ml,
                                               int local_index);
 
+// return name of the nth variable in a particular mechanism, or an empty string
+// if not found
+std::string get_var_name_from_var_location(int mech_id, int variable_index);
+
 // initialize mapping of variable names of mechanism, to their places in memory
 extern void register_all_variables_offsets(int mech_id, SerializedNames variable_names);
 
 }  // namespace coreneuron
-#endif
