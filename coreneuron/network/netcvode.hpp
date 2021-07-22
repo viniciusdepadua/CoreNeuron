@@ -11,7 +11,7 @@
 
 #include "coreneuron/network/tqueue.hpp"
 
-#define PRINT_EVENT 0
+#define PRINT_EVENT 1
 
 /** QTYPE options include: spltree, pq_que
  *  STL priority queue is used instead of the splay tree by default.
