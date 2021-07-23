@@ -43,18 +43,8 @@ bool cvode_active_;
 bool nrn_use_bin_queue_ = 0;
 
 void mk_netcvode() {
-    printf("Calling mk_netcvode()\n");
     if (!net_cvode_instance) {
-        printf("Allocating new NetCvode()\n");
         net_cvode_instance = new NetCvode();
-    }
-}
-
-void delete_netcvode() {
-    printf("Calling dlt_netcvode()\n");
-    if (!net_cvode_instance) {
-        printf("Deleting NetCvode()\n");
-        delete net_cvode_instance;
     }
 }
 
@@ -161,7 +151,11 @@ void NetCvodeThreadData::enqueue(NetCvode* nc, NrnThread* nt) {
 
 NetCvode::NetCvode() {
     eps_ = 100. * DBL_EPSILON;
+#if PRINT_EVENT
     print_event_ = 1;
+#else
+    print_event_ = 0;
+#endif
     pcnt_ = 0;
     p = nullptr;
     p_construct(1);
@@ -394,7 +388,6 @@ InputPreSyn::~InputPreSyn() {}
 void PreSyn::record(double tt) {
     spikevec_lock();
     if (gid_ > -1) {
-        printf("gid %d time %lf\n", gid_, tt);
         spikevec_gid.push_back(gid_);
         spikevec_time.push_back(tt);
     }
@@ -528,7 +521,7 @@ SelfEvent::~SelfEvent() {}
 void SelfEvent::deliver(double tt, NetCvode* ns, NrnThread* nt) {
     nrn_assert(nt == PP2NT(target_));
     PP2t(target_) = tt;
-    printf("SelfEvent::deliver t=%g tt=%g %s\n", PP2t(target_), tt, pnt_name(target_));
+    // printf("SelfEvent::deliver t=%g tt=%g %s\n", PP2t(target_), tt, pnt_name(target_));
     call_net_receive(ns);
 }
 
