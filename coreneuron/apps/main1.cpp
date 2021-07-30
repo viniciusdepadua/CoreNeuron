@@ -169,6 +169,13 @@ void nrn_init_and_load_data(int argc,
     // read the global variable names and set their values from globals.dat
     set_globals(corenrn_param.datpath.c_str(), (corenrn_param.seed >= 0), corenrn_param.seed);
 
+    printf("DEBUG: seed=%u [host]\n", nrnran123_get_globalindex());
+    #pragma acc serial
+    {
+      printf("DEBUG: seed=%u [device]#1\n", nrnran123_get_globalindex());
+    }
+    std::exit(0);
+
     // set global variables for start time, timestep and temperature
     t = checkPoints.restore_time();
 

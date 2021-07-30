@@ -45,8 +45,24 @@ static MUTDEC void nrnran123_mutconstruct() {
 void nrnran123_mutconstruct() {}
 #endif
 
+__global__ void report_globalindex_from_device() {
+  nrnran123_get_globalindex();
+  printf("DEBUG: seed=%u, ptr=%p [device,cuda]\n", g_k.v[0], &g_k);
+}
+
 /* if one sets the global, one should reset all the stream sequences. */
 CORENRN_HOST_DEVICE uint32_t nrnran123_get_globalindex() {
+#ifdef __CUDA_ARCH__
+    printf("DEBUG: seed=%u, ptr=%p [device]\n", g_k.v[0], &g_k);
+#else
+    report_globalindex_from_device<<<1,1>>>();
+    cudaDeviceSynchronize();
+    philox4x32_key_t tmp{};
+    assert(cudaMemcpyFromSymbol(&tmp, g_k, sizeof(philox4x32_key_t)) == cudaSuccess);
+    void *tmp_dev_addr{nullptr};
+    assert(cudaGetSymbolAddress(&tmp_dev_addr, g_k) == cudaSuccess);
+    printf("DEBUG: seed=%u, dev_seed=%u, ptr=%p, dev_ptr=%p [host]\n", g_k.v[0], tmp.v[0], &g_k, tmp_dev_addr);
+#endif
     return g_k.v[0];
 }
 
