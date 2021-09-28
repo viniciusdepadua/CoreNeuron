@@ -70,6 +70,7 @@ class ProgressBar final {
 
 
 void dt2thread(double adt) { /* copied from nrnoc/fadvance.c */
+    Instrumentor::phase p_dt2thread("dt2thread");
     if (adt != nrn_threads[0]._dt) {
         for (int i = 0; i < nrn_nthread; ++i) {
             NrnThread* nt = nrn_threads + i;
@@ -85,6 +86,7 @@ void dt2thread(double adt) { /* copied from nrnoc/fadvance.c */
 }
 
 void nrn_fixed_step_minimal() { /* not so minimal anymore with gap junctions */
+    Instrumentor::phase p_nrn_fixed_step_minimal("nrn_fixed_step_minimal");
     if (t != nrn_threads->_t) {
         dt2thread(-1.);
     } else {
@@ -93,6 +95,7 @@ void nrn_fixed_step_minimal() { /* not so minimal anymore with gap junctions */
     nrn_thread_table_check();
     nrn_multithread_job(nrn_fixed_step_thread);
     if (nrn_have_gaps) {
+        Instrumentor::phase p("gap-v-transfer");
         nrnmpi_v_transfer();
         nrn_multithread_job(nrn_fixed_step_lastpart);
     }

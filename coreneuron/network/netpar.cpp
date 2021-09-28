@@ -25,6 +25,7 @@
 #include "coreneuron/network/multisend.hpp"
 #include "coreneuron/utils/nrn_assert.h"
 #include "coreneuron/utils/nrnoc_aux.hpp"
+#include "coreneuron/utils/profile/profiler_interface.h"
 
 #if NRNMPI
 #include "coreneuron/mpi/mpispike.hpp"
@@ -288,6 +289,7 @@ void nrn_spike_exchange_init() {
 
 #if NRNMPI
 void nrn_spike_exchange(NrnThread* nt) {
+    Instrumentor::phase p_nrn_spike_exchange("nrn_spike_exchange");
     if (!active_) {
         return;
     }
@@ -565,6 +567,7 @@ int nrn_set_timeout(int timeout) {
 }
 
 void BBS_netpar_solve(double tstop) {
+    Instrumentor::phase p_BBS_netpar_solve("BBS_netpar_solve");
     double time = nrn_wtime();
 
 #if NRNMPI

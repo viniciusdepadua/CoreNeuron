@@ -9,6 +9,7 @@
 #include "coreneuron/nrnconf.h"
 #include "coreneuron/sim/multicore.hpp"
 #include "coreneuron/mpi/nrnmpi.h"
+#include "coreneuron/utils/profile/profiler_interface.h"
 
 #if NRNMPI
 
@@ -47,6 +48,7 @@ static void timed_out(int sig) {
 }
 
 void nrn_timeout(int seconds) {
+    Instrumentor::phase p_nrn_timeout("nrn_timeout");
     if (nrnmpi_myid != 0) {
         return;
     }

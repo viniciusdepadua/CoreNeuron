@@ -14,6 +14,7 @@
 #include "coreneuron/utils/memory.h"
 #include "coreneuron/coreneuron.hpp"
 #include "coreneuron/utils/nrnoc_aux.hpp"
+#include "coreneuron/utils/profile/profiler_interface.h"
 
 /*
 Now that threads have taken over the actual_v, v_node, etc, it might
@@ -161,6 +162,7 @@ void nrn_mk_table_check() {
 }
 
 void nrn_thread_table_check() {
+    Instrumentor::phase p_nrn_thread_table_check("nrn_thread_table_check");
     for (int i = 0; i < table_check_cnt_; i += 2) {
         auto& nt = nrn_threads[table_check_[i].i];
         auto tml = static_cast<NrnThreadMembList*>(table_check_[i + 1]._pvoid);
