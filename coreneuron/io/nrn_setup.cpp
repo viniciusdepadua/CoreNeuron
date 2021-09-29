@@ -928,12 +928,15 @@ void read_phase3(NrnThread& nt, UserParams& userParams) {
     int count = 0;
 
     F.read_mapping_cell_count(&count);
+    //std::cout << "Count: " << count << std::endl;
+    //std::cout << "nt.ncell: " << nt.ncell << std::endl;
 
     /** number of cells in mapping file should equal to cells in NrnThread */
-    nrn_assert(count == nt.ncell);
+    //nrn_assert(count == nt.ncell);
 
     /** for every neuron */
-    for (int i = 0; i < nt.ncell; i++) {
+    //for (int i = 0; i < nt.ncell; i++) {
+    for (int i = 0; i < count; i++) {
         int gid, nsec, nseg, nseclist;
 
         // read counts
@@ -952,7 +955,7 @@ void read_phase3(NrnThread& nt, UserParams& userParams) {
     }
 
     // make number #cells match with mapping size
-    nrn_assert((int) ntmapping->size() == nt.ncell);
+    //nrn_assert((int) ntmapping->size() == nt.ncell);
 
     // set pointer in NrnThread
     nt.mapping = (void*) ntmapping;
