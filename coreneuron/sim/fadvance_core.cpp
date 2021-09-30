@@ -126,6 +126,7 @@ integration interval before joining
 
 void nrn_fixed_single_steps_minimal(int total_sim_steps, double tstop) {
     ProgressBar progress_bar(total_sim_steps);
+    Instrumentor::phase_begin("timestep");
 #if NRNMPI
     double updated_tstop = tstop - dt;
     nrn_assert(nrn_threads->_t <= tstop);
@@ -141,6 +142,7 @@ void nrn_fixed_single_steps_minimal(int total_sim_steps, double tstop) {
         }
         progress_bar.step(nrn_threads[0]._t);
     }
+    Instrumentor::phase_end("timestep");
 }
 
 
@@ -152,7 +154,7 @@ void nrn_fixed_step_group_minimal(int total_sim_steps) {
     int step_group_end = 0;
 
     ProgressBar progress_bar(step_group_n);
-
+    Instrumentor::phase_begin("timestep");
     while (step_group_end < step_group_n) {
         nrn_multithread_job(nrn_fixed_step_group_thread,
                             step_group_n,
@@ -175,6 +177,7 @@ void nrn_fixed_step_group_minimal(int total_sim_steps) {
         progress_bar.update(step_group_end, nrn_threads[0]._t);
     }
     t = nrn_threads[0]._t;
+    Instrumentor::phase_end("timestep");
 }
 
 static void* nrn_fixed_step_group_thread(NrnThread* nth,
@@ -344,8 +347,6 @@ void nrncore2nrn_send_values(NrnThread* nth) {
 static void* nrn_fixed_step_thread(NrnThread* nth) {
     /* check thresholds and deliver all (including binqueue)
        events up to t+dt/2 */
-    Instrumentor::phase_begin("timestep");
-
     {
         Instrumentor::phase p("deliver_events");
         deliver_net_events(nth);
@@ -388,7 +389,6 @@ static void* nrn_fixed_step_thread(NrnThread* nth) {
     if (!nrn_have_gaps) {
         nrn_fixed_step_lastpart(nth);
     }
-    Instrumentor::phase_end("timestep");
     return nullptr;
 }
 
