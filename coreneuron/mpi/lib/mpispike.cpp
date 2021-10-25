@@ -88,8 +88,6 @@ int nrnmpi_spike_exchange_impl(int* nin,
                                NRNMPI_Spikebuf* spbufout,
                                NRNMPI_Spikebuf* spbufin) {
     nrn_assert(spikein);
-    Instrumentor::phase_begin("spike-exchange");
-
     {
         Instrumentor::phase p("imbalance");
         wait_before_spike_exchange();
@@ -152,7 +150,6 @@ int nrnmpi_spike_exchange_impl(int* nin,
     ovfl = novfl;
 #endif
     Instrumentor::phase_end("communication");
-    Instrumentor::phase_end("spike-exchange");
     return n;
 }
 

@@ -5,6 +5,7 @@ spconfig.*
 .DS_Store
 *.swp
 *.srctrl*
+.vscode
 
 # HPC coding conventions
 .clang-format

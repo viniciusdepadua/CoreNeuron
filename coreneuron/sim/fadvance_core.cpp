@@ -145,6 +145,7 @@ void nrn_fixed_single_steps_minimal(int total_sim_steps, double tstop) {
 
 
 void nrn_fixed_step_group_minimal(int total_sim_steps) {
+    Instrumentor::phase p_timestep("timestep");
     dt2thread(dt);
     nrn_thread_table_check();
     int step_group_n = total_sim_steps;
@@ -182,7 +183,6 @@ static void nrn_fixed_step_group_thread(NrnThread* nth,
                                         int& step_group_end) {
     nth->_stop_stepping = 0;
     for (int i = step_group_begin; i < step_group_max; ++i) {
-        Instrumentor::phase p_timestep("timestep");
         nrn_fixed_step_thread(nth);
         if (nth->_stop_stepping) {
             if (nth->id == 0) {
@@ -341,6 +341,7 @@ void nrncore2nrn_send_values(NrnThread* nth) {
 }
 
 static void* nrn_fixed_step_thread(NrnThread* nth) {
+    Instrumentor::phase p_advance("advance-by-dt");
     /* check thresholds and deliver all (including binqueue)
        events up to t+dt/2 */
     {
