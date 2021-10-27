@@ -12,6 +12,7 @@
 
 #if DEBUG
 #include <fstream>
+#include <iomanip>
 #endif
 
 #include "coreneuron/utils/randoms/nrnran123.h"

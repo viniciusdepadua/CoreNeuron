@@ -206,7 +206,7 @@ void nrn_partrans::gap_mpi_setup(int ngroup) {
 #if DEBUG
     // things look ok so far?
     for (int tid = 0; tid < ngroup; ++tid) {
-        nrn_partrans::SetupTransferInfo& si = setup_info_[tid];
+        SetupTransferInfo& si = setup_info_[tid];
         nrn_partrans::TransferThreadData& ttd = transfer_thread_data_[tid];
         for (size_t i = 0; i < si.src_sid.size(); ++i) {
             printf("%d %d src sid=%d v_index=%d %g\n",
@@ -217,7 +217,7 @@ void nrn_partrans::gap_mpi_setup(int ngroup) {
                    nrn_threads[tid]._data[ttd.src_indices[i]]);
         }
         for (size_t i = 0; i < ttd.tar_indices.size(); ++i) {
-            printf("%d %d src sid=i%z tar_index=%d %g\n",
+            printf("%d %d src sid=i%zd tar_index=%d %g\n",
                    nrnmpi_myid,
                    tid,
                    i,
